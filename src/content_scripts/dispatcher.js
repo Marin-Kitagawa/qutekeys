@@ -14,6 +14,8 @@ class Dispatcher {
   constructor(registry, messaging) {
     this._registry = registry;
     this._messaging = messaging;
+    /** The name of the last successfully dispatched content command (excludes 'repeat-last'). */
+    this.lastCommand = undefined;
   }
 
   /**
@@ -33,6 +35,10 @@ class Dispatcher {
     if (cmd && cmd.context === 'content' && typeof cmd.handler === 'function') {
       const ctx = { count };
       await cmd.handler(ctx, { args, flags, count });
+      // Track last command (skip repeat-last itself to avoid infinite loops)
+      if (name !== 'repeat-last') {
+        this.lastCommand = name;
+      }
       return;
     }
 

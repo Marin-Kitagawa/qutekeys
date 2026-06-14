@@ -9,9 +9,10 @@
  */
 
 const { fuzzyRank }    = require('./fuzzy');
-const { sourceBadge, urlAndSearch, bookmarks, history, tabs, commands, marks } = require('./sources');
+const { sourceBadge, urlAndSearch, bookmarks, history, tabs, commands, marks, recentlyClosed, closeTabs, windows } = require('./sources');
 const { OMNIBAR_CSS }  = require('./omnibar.css');
 const { isSafeNavUrl } = require('../../core/url-safety');
+const { killToStart, killToEnd, deleteWordBack, wordBack, wordForward } = require('./readline');
 
 // Maximum number of results rendered at once
 const MAX_RESULTS = 48;
@@ -278,6 +279,12 @@ class Omnibar {
         return commands(q, r);
       case 'marks':
         return marks(q, c);
+      case 'recently-closed':
+        return recentlyClosed(q, m);
+      case 'close-tabs':
+        return closeTabs(q, m);
+      case 'windows':
+        return windows(q, m);
       default:
         return commands(q, r);
     }
@@ -316,6 +323,16 @@ class Omnibar {
           this._dispatcher.run(action.name, { args: [], flags: {} }).catch(() => {});
         }
         break;
+      case 'close-tab':
+        if (this._messaging) {
+          this._messaging.sendMessage({ type: 'command', name: 'tab-close', args: [action.tabId], flags: {}, count: null }).catch(() => {});
+        }
+        break;
+      case 'move-to-window':
+        if (this._messaging) {
+          this._messaging.sendMessage({ type: 'command', name: 'tab-move-to-window', args: [action.windowId], flags: {}, count: null }).catch(() => {});
+        }
+        break;
       default:
         if (action.url) this._openUrl(action.url, false);
     }
@@ -340,6 +357,78 @@ class Omnibar {
   // ── Keyboard navigation ────────────────────────────────────────────────────
 
   _handleKey(e) {
+    // Readline editing shortcuts for the input field
+    if (this._input && e.ctrlKey && !e.altKey) {
+      switch (e.key) {
+        case 'a':
+          e.preventDefault(); e.stopPropagation();
+          this._input.selectionStart = this._input.selectionEnd = 0;
+          return;
+        case 'e':
+          e.preventDefault(); e.stopPropagation();
+          this._input.selectionStart = this._input.selectionEnd = this._input.value.length;
+          return;
+        case 'w': {
+          e.preventDefault(); e.stopPropagation();
+          const rw = deleteWordBack(this._input.value, this._input.selectionStart);
+          this._input.value = rw.value;
+          this._input.selectionStart = this._input.selectionEnd = rw.caret;
+          this._query(this._input.value);
+          return;
+        }
+        case 'u': {
+          e.preventDefault(); e.stopPropagation();
+          const ru = killToStart(this._input.value, this._input.selectionStart);
+          this._input.value = ru.value;
+          this._input.selectionStart = this._input.selectionEnd = ru.caret;
+          this._query(this._input.value);
+          return;
+        }
+        case 'k': {
+          e.preventDefault(); e.stopPropagation();
+          const rk = killToEnd(this._input.value, this._input.selectionStart);
+          this._input.value = rk.value;
+          this._input.selectionStart = this._input.selectionEnd = rk.caret;
+          this._query(this._input.value);
+          return;
+        }
+        case 'b':
+          e.preventDefault(); e.stopPropagation();
+          if (this._input.selectionStart > 0) {
+            this._input.selectionStart = this._input.selectionEnd = this._input.selectionStart - 1;
+          }
+          return;
+        case 'f':
+          e.preventDefault(); e.stopPropagation();
+          if (this._input.selectionStart < this._input.value.length) {
+            this._input.selectionStart = this._input.selectionEnd = this._input.selectionStart + 1;
+          }
+          return;
+        case 'n':
+          e.preventDefault(); e.stopPropagation(); this._moveSelection(1);
+          return;
+        case 'p':
+          e.preventDefault(); e.stopPropagation(); this._moveSelection(-1);
+          return;
+      }
+    }
+    if (this._input && e.altKey && !e.ctrlKey) {
+      switch (e.key) {
+        case 'b': {
+          e.preventDefault(); e.stopPropagation();
+          const pos = wordBack(this._input.value, this._input.selectionStart);
+          this._input.selectionStart = this._input.selectionEnd = pos;
+          return;
+        }
+        case 'f': {
+          e.preventDefault(); e.stopPropagation();
+          const pos = wordForward(this._input.value, this._input.selectionStart);
+          this._input.selectionStart = this._input.selectionEnd = pos;
+          return;
+        }
+      }
+    }
+    // Original switch
     switch (e.key) {
       case 'Escape':
         e.preventDefault(); e.stopPropagation();
@@ -357,12 +446,6 @@ class Omnibar {
       case 'ArrowUp':
         e.preventDefault(); e.stopPropagation();
         this._moveSelection(-1);
-        break;
-      case 'n':
-        if (e.ctrlKey) { e.preventDefault(); e.stopPropagation(); this._moveSelection(1); }
-        break;
-      case 'p':
-        if (e.ctrlKey) { e.preventDefault(); e.stopPropagation(); this._moveSelection(-1); }
         break;
     }
   }
@@ -392,6 +475,9 @@ class Omnibar {
       'tabs': 'Switch to tab…',
       'commands': 'Run command…',
       'marks': 'Jump to mark…',
+      'recently-closed': 'Recently closed tabs…',
+      'close-tabs': 'Close tab…',
+      'windows': 'Move to window…',
     };
     return MAP[name] || 'Type to search…';
   }

@@ -25,6 +25,7 @@ const { registerEditorCommands }      = require('../commands/editor-commands');
 const { registerNvimCommands }        = require('../commands/nvim-commands');
 const { registerHelpCommands }        = require('../commands/help-commands');
 const { registerPageCommands }        = require('../commands/page-commands');
+const { registerWave6Commands }       = require('../commands/wave6-commands');
 
 function registerAllContentCommands(registry, ctx = {}) {
   // Phase 20: per-domain userscripts (store is optional)
@@ -76,6 +77,9 @@ function registerAllContentCommands(registry, ctx = {}) {
   // Wave 5: Page/browser feature commands (fullscreen, print, navigate, zoom,
   // reload variants, translate, TTS, download-image).
   registerPageCommands(registry, ctx);
+
+  // Wave 6: Modes & macros (passthrough, macros, blocklist, scroll-target, etc.)
+  registerWave6Commands(registry, ctx);
 }
 
 module.exports = { registerAllContentCommands };

@@ -34,6 +34,10 @@ const { injectMatching }     = require('./userscripts');
 const { VimEditor }          = require('./ui/editor');
 const { NvimEditor }         = require('./nvim');
 const { Omnibar }            = require('./ui/omnibar');
+const { PassThrough }        = require('./passthrough');
+const { Macros }             = require('./macros');
+const { Blocklist }          = require('../core/blocklist');
+const { ScrollTarget }       = require('./scroll-target');
 
 /**
  * Bootstrap the content-script.  Safe to call multiple times (subsequent calls
@@ -132,6 +136,27 @@ async function init() {
   // ── Marks (config-backed; only constructed when config is available) ───────
   const marks = config ? new Marks(config) : null;
 
+  // ── Wave 6: Blocklist guard ───────────────────────────────────────────────
+  const blocklist = config ? new Blocklist(config) : null;
+  if (blocklist && typeof location !== 'undefined' && location.host) {
+    if (blocklist.isBlocked(location.host)) {
+      // Site is blocked — QuteSurf is disabled for this host; skip init.
+      return;
+    }
+  }
+
+  // ── Wave 6: PassThrough, Macros, ScrollTarget ─────────────────────────────
+  const passThrough = new PassThrough({ modes });
+  const scrollTarget = new ScrollTarget();
+  // macros.onReplayKey is wired to keyHandler.handleKey after keyHandler is constructed.
+  const macros = new Macros({ onReplayKey: (keyStr) => {
+    if (typeof _keyHandlerRef !== 'undefined' && _keyHandlerRef) {
+      _keyHandlerRef.handleKey(keyStr);
+    }
+  } });
+  // _keyHandlerRef is set below after KeyHandler construction (forward reference via closure).
+  let _keyHandlerRef = null;
+
   // ── Userscript store (config-backed) + inject matching scripts for current URL ──
   const userscriptStore = config ? new UserscriptStore(config) : null;
   if (userscriptStore && typeof location !== 'undefined') {
@@ -143,10 +168,12 @@ async function init() {
   }
 
   // ── Register all content commands (nav, hints, …) ─────────────────────────
-  registerAllContentCommands(registry, { hintsController, dispatcher, messaging, config, modes, finder, visual, marks, userscriptStore, vimEditor, nvimEditor, omnibar });
+  registerAllContentCommands(registry, { hintsController, dispatcher, messaging, config, modes, finder, visual, marks, userscriptStore, vimEditor, nvimEditor, omnibar, passThrough, macros, blocklist, scrollTarget });
 
   // ── Key handler ───────────────────────────────────────────────────────────
-  const keyHandler = new KeyHandler(normalKeymap, {
+  // eslint-disable-next-line prefer-const
+  let keyHandler;
+  keyHandler = new KeyHandler(normalKeymap, {
     onMatched(command, count) {
       const parsed = parseCommandLine(command);
       dispatcher.run(parsed.name, { args: parsed.args, flags: parsed.flags, count }).catch(err => {
@@ -163,13 +190,28 @@ async function init() {
     },
   });
 
+  // Wire macros replay key reference now that keyHandler is constructed
+  _keyHandlerRef = keyHandler;
+
   // ── Keydown listener ─────────────────────────────────────────────────────
   // Mode-aware: only drives the normal keymap in normal mode; other modes are
   // owned by their controllers' own listeners (see makeContentKeydownHandler).
+  // Also feeds keys to macros recorder when recording is active.
   if (typeof document !== 'undefined') {
+    const baseHandler = makeContentKeydownHandler({ modes, keyHandler });
     document.addEventListener(
       'keydown',
-      makeContentKeydownHandler({ modes, keyHandler }),
+      (e) => {
+        // Record the key to the active macro register if recording
+        if (macros && macros.isRecording()) {
+          const { keyEventToString: kets } = require('./keyhandler');
+          const MODIFIERS = ['Control', 'Alt', 'Meta', 'Shift'];
+          if (!MODIFIERS.includes(e.key)) {
+            macros.recordKey(kets(e));
+          }
+        }
+        baseHandler(e);
+      },
       true /* capturing */,
     );
   }

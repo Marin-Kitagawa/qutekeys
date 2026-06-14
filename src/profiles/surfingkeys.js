@@ -174,6 +174,25 @@ module.exports = {
       'v':   'caret-mode',
       'V':   'visual-restore',          // SK V = restore last visual selection
       'zv':  'visual-select-element',   // SK zv = enter visual and select element
+      '<Alt-i>':   'mode-passthrough',
+      'p':         'mode-passthrough-ephemeral', // SK: p is free (not previously bound)
+
+      // ── Wave 6: Modes & macros ─────────────────────────────────────────────
+      // 'q' COLLISION: q is already 'hint-click-media' in SK. We do NOT rebind
+      // macro-record to 'q' here. macro-record is accessible via :macro-record cmdline.
+      // macro-run '@' is free in SK.
+      '@':         'macro-run',
+      '.':         'repeat-last',
+      '<Alt-s>':   'blocklist-toggle',
+      'cs':        'scroll-target-next',
+      'cS':        'scroll-target-reset',
+      ';u':        'edit-url-open',
+      ';U':        'edit-url-reload',
+      'ox':        'omnibar-recently-closed',
+      ';x':        'omnibar-close-tabs',
+      'W':         'omnibar-windows',
+      "<Ctrl-'>":  'mark-jump-newtab',
+      'w':         'switch-frames',
 
       // ── Search ────────────────────────────────────────────────────────────
       '*':   'search-word',             // SK * = search word under cursor

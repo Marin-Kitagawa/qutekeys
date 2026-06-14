@@ -130,6 +130,57 @@ async function marks(query, config) {
     }));
 }
 
+/**
+ * Recently closed tabs source — queries background via messaging for sessions-recently-closed.
+ */
+async function recentlyClosed(query, messaging) {
+  if (!messaging) return [];
+  try {
+    const items = await messaging.sendMessage({ type: 'command', name: 'sessions-recently-closed', args: [], flags: {}, count: null });
+    if (!Array.isArray(items)) return [];
+    return items.map(s => ({
+      type: 'history',
+      title: s.title || s.url || 'Closed tab',
+      url: s.url || '',
+      action: { kind: 'open', url: s.url || '' },
+    }));
+  } catch (_) { return []; }
+}
+
+/**
+ * Close tabs source — queries background for tab-list, then closes chosen tab.
+ */
+async function closeTabs(query, messaging) {
+  if (!messaging) return [];
+  try {
+    const tabList = await messaging.sendMessage({ type: 'command', name: 'tab-list', args: [], flags: {}, count: null });
+    if (!Array.isArray(tabList)) return [];
+    return tabList.map(t => ({
+      type: 'tab',
+      title: t.title || t.url,
+      url: t.url,
+      action: { kind: 'close-tab', tabId: t.id },
+    }));
+  } catch (_) { return []; }
+}
+
+/**
+ * Windows source — queries background for windows-list, then moves tab to chosen window.
+ */
+async function windows(query, messaging) {
+  if (!messaging) return [];
+  try {
+    const winList = await messaging.sendMessage({ type: 'command', name: 'windows-list', args: [], flags: {}, count: null });
+    if (!Array.isArray(winList)) return [];
+    return winList.map(w => ({
+      type: 'tab',
+      title: `Window ${w.id}` + (w.focused ? ' (current)' : ''),
+      url: '',
+      action: { kind: 'move-to-window', windowId: w.id },
+    }));
+  } catch (_) { return []; }
+}
+
 module.exports = {
   sourceBadge,
   urlAndSearch,
@@ -138,4 +189,7 @@ module.exports = {
   tabs,
   commands,
   marks,
+  recentlyClosed,
+  closeTabs,
+  windows,
 };

@@ -93,6 +93,16 @@ const CANONICAL_COMMANDS = [
   'zoom-in', 'zoom-out', 'zoom-reset',
   'view-source', 'capture-visible',
   'history-delete-old', 'download-image',
+
+  // Wave 6: Modes & macros
+  'mode-passthrough-ephemeral',
+  'macro-record', 'macro-run', 'repeat-last',
+  'blocklist-toggle',
+  'scroll-target-next', 'scroll-target-reset',
+  'edit-url-open', 'edit-url-reload',
+  'omnibar-recently-closed', 'omnibar-close-tabs', 'omnibar-windows',
+  'mark-jump-newtab',
+  'switch-frames',
 ];
 
 /**

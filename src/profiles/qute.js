@@ -140,6 +140,12 @@ module.exports = {
       'v':   'caret-mode',
       '<Ctrl-V>': 'mode-passthrough',
 
+      // ── Wave 6: Modes & macros ────────────────────────────────────────────
+      // 'q' is free in qute (not previously bound)
+      'q':   'macro-record',
+      '@':   'macro-run',
+      '.':   'repeat-last',
+
       // ── Search ────────────────────────────────────────────────────────────
       '*':   'search-word',             // search word under cursor (qute caret *)
 

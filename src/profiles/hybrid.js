@@ -186,7 +186,27 @@ module.exports = {
       'i':   'mode-insert',
       'v':   'caret-mode',
       '<Ctrl-V>': 'mode-passthrough',
+      '<Alt-i>':  'mode-passthrough',   // SK alias
       'zv':  'visual-select-element',   // SK zv = enter visual and select element
+      // 'p' is free in hybrid (only 'pp' and 'Pp' are bound — those are 2-key sequences)
+      'p':   'mode-passthrough-ephemeral', // SK ephemeral passthrough
+
+      // ── Wave 6: Modes & macros ────────────────────────────────────────────
+      // 'q' COLLISION: q is already 'hint-click-media' in hybrid (inherited from SK).
+      // We do NOT rebind 'q' to macro-record. macro-record has no key in hybrid;
+      // accessible via :macro-record cmdline. Users can rebind manually if desired.
+      '@':         'macro-run',
+      '.':         'repeat-last',
+      '<Alt-s>':   'blocklist-toggle',
+      'cs':        'scroll-target-next',
+      'cS':        'scroll-target-reset',
+      ';u':        'edit-url-open',
+      ';U':        'edit-url-reload',
+      'ox':        'omnibar-recently-closed',
+      ';x':        'omnibar-close-tabs',
+      'W':         'omnibar-windows',
+      "<Ctrl-'>":  'mark-jump-newtab',
+      'w':         'switch-frames',
 
       // ── Search ────────────────────────────────────────────────────────────
       '*':   'search-word',             // search word under cursor
