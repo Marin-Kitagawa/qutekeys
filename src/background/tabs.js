@@ -468,6 +468,20 @@ function registerTabCommands(registry) {
       return url ? api().tabs.create({ url, active: false }) : api().tabs.create({ active: false });
     },
   });
+
+  registry.register({
+    name: 'view-source',
+    description: 'Open the current tab\'s source in a new tab using view-source: scheme',
+    context: 'background',
+    modes: ['normal'],
+    handler: async (ctx) => {
+      // Intentionally bypasses isSafeNavUrl — view-source: is a browser-native
+      // scheme that must NOT go through the http-only allowlist.
+      const url = ctx.sender && ctx.sender.tab && ctx.sender.tab.url;
+      if (!url) return;
+      return api().tabs.create({ url: 'view-source:' + url });
+    },
+  });
 }
 
 module.exports = { registerTabCommands };

@@ -4,6 +4,9 @@ function fakeChrome(initial = {}) {
 
   const _windowsCreated = [];
   const _onActivatedListeners = [];
+  const _zoomMap = {};                  // tabId → zoom factor
+  const _zoomSetCalls = [];             // [{tabId, factor}] for assertions
+  const _captureVisibleCalls = [];      // for assertions
 
   const _bookmarks = Array.isArray(initial._bookmarks) ? [...initial._bookmarks] : [];
   let nextBookmarkId = _bookmarks.length + 1;
@@ -47,8 +50,23 @@ function fakeChrome(initial = {}) {
       onActivated: { addListener: (fn) => _onActivatedListeners.push(fn) },
       _all: () => tabs,
       _fireActivated: (tabId, windowId = 1) => _onActivatedListeners.forEach(fn => fn({ tabId, windowId })),
+      // Wave 5: zoom support
+      getZoom: async (tabId) => _zoomMap[tabId] !== undefined ? _zoomMap[tabId] : 1,
+      setZoom: async (tabId, factor) => { _zoomMap[tabId] = factor; _zoomSetCalls.push({ tabId, factor }); },
+      _zoomMap,
+      _zoomSetCalls,
+      // Wave 5: capture support
+      captureVisibleTab: async () => { _captureVisibleCalls.push(true); return 'data:image/png;base64,AAAA'; },
+      _captureVisibleCalls,
     },
-    history: { search: async ({ text }) => [{ url: 'https://hist.com', title: 'Hist ' + text, visitCount: 3 }] },
+    history: (function () {
+      const _deleteRangeCalls = [];
+      return {
+        search: async ({ text }) => [{ url: 'https://hist.com', title: 'Hist ' + text, visitCount: 3 }],
+        deleteRange: async (range) => { _deleteRangeCalls.push(range); },
+        _deleteRangeCalls,
+      };
+    })(),
     bookmarks: {
       _bookmarks,
       search: async (q) => {

@@ -12,6 +12,17 @@ function registerHistoryCommands(registry) {
       return api().history.search({ text, maxResults: 50 });
     },
   });
+
+  registry.register({
+    name: 'history-delete-old',
+    description: 'Delete browser history older than 30 days',
+    context: 'background',
+    modes: ['normal'],
+    handler: async (_ctx) => {
+      const endTime = Date.now() - 30 * 24 * 60 * 60 * 1000;
+      return api().history.deleteRange({ startTime: 0, endTime });
+    },
+  });
 }
 
 module.exports = { registerHistoryCommands };

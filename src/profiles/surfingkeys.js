@@ -177,6 +177,30 @@ module.exports = {
 
       // ── Search ────────────────────────────────────────────────────────────
       '*':   'search-word',             // SK * = search word under cursor
+
+      // ── Wave 5: Page / browser features (SK upstream keys) ────────────────
+      // Zoom: SK zi/zo/zr
+      'zi':  'zoom-in',
+      'zo':  'zoom-out',
+      'zr':  'zoom-reset',
+      // Reload variants: SK g?=reload-no-query, g#=reload-no-hash
+      'g?':  'reload-no-query',
+      'g#':  'reload-no-hash',
+      // navigate prev/next: SK [[ / ]]
+      '[[':  'navigate-prev',
+      ']]':  'navigate-next',
+      // view-source: SK gs
+      'gs':  'view-source',
+      // read-aloud: SK gr (mnemonic: Go Read)
+      'gr':  'read-aloud',
+      // translate-page: SK ;t (mnemonic: ;Translate)
+      ';t':  'translate-page',
+      // capture-visible: SK yg (mnemonic: Yank Graphics)
+      'yg':  'capture-visible',
+      // download-image: SK ;di (mnemonic: ;Download Image)
+      ';di': 'download-image',
+      // history-delete-old: SK ;dh (mnemonic: ;Delete History)
+      ';dh': 'history-delete-old',
     },
 
     insert: {

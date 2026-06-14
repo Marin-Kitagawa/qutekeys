@@ -142,6 +142,29 @@ module.exports = {
 
       // ── Search ────────────────────────────────────────────────────────────
       '*':   'search-word',             // search word under cursor (qute caret *)
+
+      // ── Wave 5: Page / browser features ──────────────────────────────────
+      // fullscreen: F11 (qute has no default; F11 is universal browser shortcut)
+      '<F11>':       'fullscreen',
+      // print: Ctrl-Alt-p (avoids Ctrl-p which is tab-pin)
+      '<Ctrl-Alt-p>': 'print',
+      // navigate prev/next: qute upstream [[ / ]] (follows rel links)
+      '[[':           'navigate-prev',
+      ']]':           'navigate-next',
+      // URL increment/decrement: qute upstream Ctrl-A / Ctrl-X
+      '<Ctrl-A>':    'url-increment',
+      '<Ctrl-X>':    'url-decrement',
+      // view-source: qute gf = open current URL in background (repurposed here);
+      // also gs as alias (mnemonic: Go Source)
+      'gf':           'view-source',
+      'gs':           'view-source',
+      // zoom: qute uses + - = (also zi/zo/zr for SK compatibility)
+      '+':            'zoom-in',
+      'zi':           'zoom-in',
+      '-':            'zoom-out',
+      'zo':           'zoom-out',
+      '=':            'zoom-reset',
+      'zr':           'zoom-reset',
     },
 
     insert: {

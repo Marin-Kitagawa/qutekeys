@@ -83,6 +83,16 @@ const CANONICAL_COMMANDS = [
 
   // Modes / help
   'mode-insert', 'mode-normal', 'mode-passthrough', 'help',
+
+  // Wave 5: Page / browser features
+  'fullscreen', 'print',
+  'navigate-next', 'navigate-prev',
+  'url-increment', 'url-decrement',
+  'reload-no-query', 'reload-no-hash',
+  'translate-page', 'read-aloud', 'read-stop',
+  'zoom-in', 'zoom-out', 'zoom-reset',
+  'view-source', 'capture-visible',
+  'history-delete-old', 'download-image',
 ];
 
 /**

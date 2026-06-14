@@ -24,6 +24,7 @@ const { registerUserscriptCommands }  = require('../commands/userscript-commands
 const { registerEditorCommands }      = require('../commands/editor-commands');
 const { registerNvimCommands }        = require('../commands/nvim-commands');
 const { registerHelpCommands }        = require('../commands/help-commands');
+const { registerPageCommands }        = require('../commands/page-commands');
 
 function registerAllContentCommands(registry, ctx = {}) {
   // Phase 20: per-domain userscripts (store is optional)
@@ -71,6 +72,10 @@ function registerAllContentCommands(registry, ctx = {}) {
   if (!registry.get('help')) {
     registerHelpCommands(registry, { messaging: ctx.messaging });
   }
+
+  // Wave 5: Page/browser feature commands (fullscreen, print, navigate, zoom,
+  // reload variants, translate, TTS, download-image).
+  registerPageCommands(registry, ctx);
 }
 
 module.exports = { registerAllContentCommands };

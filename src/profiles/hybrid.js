@@ -190,6 +190,34 @@ module.exports = {
 
       // ── Search ────────────────────────────────────────────────────────────
       '*':   'search-word',             // search word under cursor
+
+      // ── Wave 5: Page / browser features ──────────────────────────────────
+      // fullscreen: F11 (universal; no collision in either source profile)
+      '<F11>':        'fullscreen',
+      // navigate prev/next: [[ / ]] (both qute and SK use this; no conflict)
+      '[[':           'navigate-prev',
+      ']]':           'navigate-next',
+      // zoom: zi/zo/zr (SK) — + / - / = omitted to avoid potential conflicts
+      'zi':           'zoom-in',
+      'zo':           'zoom-out',
+      'zr':           'zoom-reset',
+      // reload without query/hash: SK g? / g# (no qute equivalent; no collision)
+      'g?':           'reload-no-query',
+      'g#':           'reload-no-hash',
+      // view-source: gs (SK; qute has gf for background tab — omit gf collision,
+      // gs is free in hybrid so this is clean)
+      'gs':           'view-source',
+      // read-aloud: gr (SK mnemonic; no qute collision)
+      'gr':           'read-aloud',
+      // translate-page: ;t (qute uses ;t=hint-input; hybrid keeps hint-input
+      // on ;t for qute users — use ;T for translate to avoid collision)
+      ';T':           'translate-page',
+      // capture-visible: yg (SK mnemonic; no collision in hybrid)
+      'yg':           'capture-visible',
+      // history-delete-old: ;dh (SK; no collision)
+      ';dh':          'history-delete-old',
+      // download-image: ;di (SK; no collision)
+      ';di':          'download-image',
     },
 
     insert: {

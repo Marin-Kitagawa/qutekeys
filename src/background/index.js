@@ -6,6 +6,8 @@ const { registerBookmarkCommands } = require('./bookmarks');
 const { registerDownloadCommands } = require('./downloads');
 const { registerSessionCommands } = require('./sessions');
 const { registerProxyCommands } = require('./proxy');
+const { registerZoomCommands } = require('./zoom');
+const { registerCaptureCommands } = require('./capture');
 
 /**
  * Create a message router for background commands.
@@ -52,6 +54,8 @@ function buildBackgroundRegistry() {
   registerDownloadCommands(registry);
   registerSessionCommands(registry);
   registerProxyCommands(registry);
+  registerZoomCommands(registry);
+  registerCaptureCommands(registry);
   return registry;
 }
 
