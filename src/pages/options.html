@@ -7,67 +7,169 @@
   <link rel="stylesheet" href="options.css" />
 </head>
 <body>
-  <header>
-    <h1>QuteSurf</h1>
-    <span class="version" id="version">v0.1.0</span>
-    <span style="margin-left:auto; color:var(--subtext); font-size:0.8rem;">Options</span>
-  </header>
 
-  <!-- Theme Picker -->
-  <section class="card" id="section-theme">
-    <h2>Theme</h2>
-    <div id="theme-swatches" class="theme-swatches"></div>
-    <div class="msg" id="theme-msg"></div>
-  </section>
-
-  <!-- Profile -->
-  <section class="card" id="section-profile">
-    <h2>Active Profile</h2>
-    <div class="row">
-      <label for="profile-select">Profile</label>
-      <select id="profile-select"></select>
+  <!-- Nav Rail -->
+  <nav class="nav-rail" id="nav-rail" aria-label="Settings sections">
+    <div class="nav-rail__logo" aria-hidden="true">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="22" height="22" rx="6" fill="#5ee7c2" fill-opacity="0.15"/>
+        <path d="M6 11h10M11 6v10" stroke="#5ee7c2" stroke-width="2" stroke-linecap="round"/>
+      </svg>
     </div>
-  </section>
+    <ul class="nav-rail__list" role="list">
+      <li><a class="nav-rail__item" href="#section-appearance" data-section="appearance">
+        <span class="nav-rail__icon" aria-hidden="true">◑</span>
+        <span class="nav-rail__label">Appearance</span>
+      </a></li>
+      <li><a class="nav-rail__item" href="#section-keymap" data-section="keymap">
+        <span class="nav-rail__icon" aria-hidden="true">⌘</span>
+        <span class="nav-rail__label">Keymap</span>
+      </a></li>
+      <li><a class="nav-rail__item" href="#section-settings" data-section="settings">
+        <span class="nav-rail__icon" aria-hidden="true">≡</span>
+        <span class="nav-rail__label">Settings</span>
+      </a></li>
+      <li><a class="nav-rail__item" href="#section-scripting" data-section="scripting">
+        <span class="nav-rail__icon" aria-hidden="true">{}</span>
+        <span class="nav-rail__label">Scripting</span>
+      </a></li>
+      <li><a class="nav-rail__item" href="#section-help" data-section="help">
+        <span class="nav-rail__icon" aria-hidden="true">?</span>
+        <span class="nav-rail__label">Help</span>
+      </a></li>
+    </ul>
+  </nav>
 
-  <!-- :set options -->
-  <section class="card" id="section-options">
-    <h2>:set Options</h2>
-    <table id="options-table">
-      <thead>
-        <tr>
-          <th>Key</th>
-          <th>Value</th>
-        </tr>
-      </thead>
-      <tbody id="options-tbody"></tbody>
-    </table>
-    <div class="btn-row">
-      <button class="btn-primary" id="save-options-btn">Save Options</button>
-    </div>
-    <div class="msg" id="options-msg"></div>
-  </section>
+  <!-- Main scroll area -->
+  <main class="main-scroll" id="main-scroll">
 
-  <!-- JS Settings editor -->
-  <section class="card" id="section-js">
-    <h2>JS Settings Script</h2>
-    <p style="color:var(--subtext); font-size:0.82rem; margin-bottom:12px;">
-      Use <code style="color:var(--accent)">mapkey</code>,
-      <code style="color:var(--accent)">imapkey</code>,
-      <code style="color:var(--accent)">vmapkey</code>,
-      <code style="color:var(--accent)">settings({})</code>,
-      <code style="color:var(--accent)">aliases()</code> and more —
-      SurfingKeys-compatible API.
-    </p>
-    <div class="editor-wrap">
-      <textarea id="js-editor" spellcheck="false" placeholder="// example:&#10;mapkey('gh', 'open github', 'omnibar-open https://github.com');&#10;settings({ hintcharacters: 'qwerty', smoothscroll: false });"></textarea>
-    </div>
-    <div class="btn-row">
-      <button class="btn-primary" id="run-js-btn">Run / Save</button>
-      <button class="btn-secondary" id="clear-js-btn">Clear</button>
-    </div>
-    <div class="msg" id="js-msg"></div>
-  </section>
+    <!-- Header -->
+    <header class="page-header" id="page-header">
+      <div class="page-header__top">
+        <div class="page-header__wordmark">
+          <span class="wordmark-qs">QuteSurf</span>
+          <span class="page-header__version" id="version">v0.1.0</span>
+        </div>
+        <p class="page-header__tagline">Keyboard-first web navigation</p>
+      </div>
+      <div class="page-header__status">
+        <span class="status-pill">
+          <span class="status-pill__dot" aria-hidden="true"></span>
+          <span class="status-pill__label">Profile: <strong id="status-profile">hybrid</strong></span>
+        </span>
+        <span class="status-pill">
+          <span class="status-pill__dot" aria-hidden="true"></span>
+          <span class="status-pill__label">Theme: <strong id="status-theme">aurora</strong></span>
+        </span>
+      </div>
+    </header>
 
+    <!-- ── Appearance ─────────────────────────────────────────── -->
+    <section class="content-section" id="section-appearance">
+      <div class="section-head">
+        <h2 class="section-title">Appearance</h2>
+        <p class="section-desc">Choose a visual theme. Changes apply live to open tabs.</p>
+      </div>
+
+      <div id="theme-cards" class="theme-cards" role="radiogroup" aria-label="Theme selection"></div>
+      <div class="msg" id="theme-msg" role="status" aria-live="polite"></div>
+    </section>
+
+    <!-- ── Keymap ─────────────────────────────────────────────── -->
+    <section class="content-section" id="section-keymap">
+      <div class="section-head">
+        <h2 class="section-title">Keymap</h2>
+        <p class="section-desc">Selects the default key profile loaded on each page.</p>
+      </div>
+
+      <div class="segmented-control" id="profile-segmented" role="radiogroup" aria-label="Key profile">
+        <button class="seg-btn" data-profile="qute" type="button" role="radio" aria-checked="false">
+          <span class="seg-btn__name">qute</span>
+          <span class="seg-btn__desc">qutebrowser-style bindings</span>
+        </button>
+        <button class="seg-btn" data-profile="surfingkeys" type="button" role="radio" aria-checked="false">
+          <span class="seg-btn__name">surfingkeys</span>
+          <span class="seg-btn__desc">SurfingKeys-compatible</span>
+        </button>
+        <button class="seg-btn" data-profile="hybrid" type="button" role="radio" aria-checked="false">
+          <span class="seg-btn__name">hybrid</span>
+          <span class="seg-btn__desc">Best of both worlds</span>
+        </button>
+      </div>
+
+      <a class="ghost-link" href="help.html" target="_blank" rel="noopener">
+        View all keybindings
+        <span class="ghost-link__arrow" aria-hidden="true">→</span>
+      </a>
+    </section>
+
+    <!-- ── Settings (:set) ────────────────────────────────────── -->
+    <section class="content-section" id="section-settings">
+      <div class="section-head">
+        <h2 class="section-title">Settings</h2>
+        <p class="section-desc">Fine-tune extension behaviour. Changes save immediately.</p>
+      </div>
+
+      <div class="options-list" id="options-list" role="list"></div>
+      <div class="msg" id="options-msg" role="status" aria-live="polite"></div>
+    </section>
+
+    <!-- ── Scripting ──────────────────────────────────────────── -->
+    <section class="content-section" id="section-scripting">
+      <div class="section-head">
+        <h2 class="section-title">Scripting</h2>
+        <p class="section-desc">
+          Run a JS settings script evaluated in a sandboxed frame — no
+          <code>unsafe-eval</code> on the extension page. Use
+          <code>mapkey</code>, <code>imapkey</code>, <code>vmapkey</code>,
+          <code>settings({})</code>, <code>aliases()</code> and more —
+          SurfingKeys-compatible API.
+        </p>
+      </div>
+
+      <div class="editor-surface">
+        <div class="editor-surface__gutter" aria-hidden="true" id="editor-gutter"></div>
+        <textarea
+          id="js-editor"
+          class="editor-surface__textarea"
+          spellcheck="false"
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="off"
+          aria-label="JS settings script"
+          placeholder="mapkey('gh', 'open GitHub', 'omnibar-open https://github.com');&#10;settings({ hintcharacters: 'qwerty', smoothscroll: false });&#10;aliases({ g: 'https://google.com/search?q=%s' });"
+        ></textarea>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-primary" id="run-js-btn" type="button">Run &amp; Save</button>
+        <button class="btn-ghost" id="clear-js-btn" type="button">Reset</button>
+      </div>
+      <div class="msg" id="js-msg" role="status" aria-live="polite"></div>
+    </section>
+
+    <!-- ── Help footer ────────────────────────────────────────── -->
+    <section class="content-section content-section--help" id="section-help">
+      <div class="help-grid">
+        <div class="help-block">
+          <h3 class="help-block__title">Keybinding cheatsheet</h3>
+          <p class="help-block__body">Full reference for every default binding across all three profiles.</p>
+          <a class="help-link" href="help.html" target="_blank" rel="noopener">Open cheatsheet →</a>
+        </div>
+        <div class="help-block">
+          <h3 class="help-block__title">Source &amp; issues</h3>
+          <p class="help-block__body">Report a bug, request a feature, or read the source on GitHub.</p>
+          <a class="help-link" href="https://github.com/Marin-Kitagawa/qutekeys" target="_blank" rel="noopener">GitHub →</a>
+        </div>
+      </div>
+      <p class="help-footer-note">
+        QuteSurf <span id="version-footer">v0.1.0</span> — MIT License
+      </p>
+    </section>
+
+  </main>
+
+  <!-- Hidden sandbox iframe for JS eval -->
   <script src="options.js"></script>
 </body>
 </html>

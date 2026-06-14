@@ -36,6 +36,9 @@
     "webpack-cli": "^7.0.3"
   },
   "dependencies": {
+    "@fontsource/bricolage-grotesque": "^5.2.10",
+    "@fontsource/fira-code": "^5.2.7",
+    "@fontsource/hanken-grotesk": "^5.2.8",
     "ace-builds": "^1.44.0"
   }
 }
