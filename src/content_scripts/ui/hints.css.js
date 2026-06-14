@@ -14,7 +14,7 @@ const HINTS_CSS = `
   padding: 1px 5px;
   min-width: 16px;
   height: 18px;
-  font-family: 'Courier New', Courier, monospace;
+  font-family: 'FiraCode Nerd Font', 'FiraCode Nerd Font Mono', 'FiraCode Nerd Font Propo', 'Fira Code', monospace;
   font-size: 11px;
   font-weight: 700;
   line-height: 1;
