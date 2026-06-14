@@ -239,16 +239,26 @@ function collectTargets(root, selector) {
  * @returns {{ matches: typeof hints, exact: (typeof hints[0])|null }}
  */
 /**
- * Compute the on-screen position for a hint label given a target's
- * getBoundingClientRect(). Labels are rendered `position: fixed`, so these are
- * VIEWPORT coordinates — scroll offset must NOT be added (doing so shifts every
- * label by the scroll amount on a scrolled page).
+ * Compute the position for a hint label given a target's getBoundingClientRect()
+ * and the current page scroll offset.
+ *
+ * Labels are rendered `position: absolute` inside an absolutely-positioned layer
+ * anchored at the document origin, so they live in DOCUMENT space and scroll
+ * WITH the page. We therefore convert the viewport-relative rect to document
+ * coordinates by ADDING the scroll offset. This keeps each label glued to its
+ * element even if the page scrolls (e.g. mouse-wheel) while hints are visible —
+ * which also guarantees the label and its click target never diverge.
  *
  * @param {{left:number, top:number}} rect
+ * @param {number} scrollX  window.scrollX (pageXOffset)
+ * @param {number} scrollY  window.scrollY (pageYOffset)
  * @returns {{ left: string, top: string }}
  */
-function hintPosition(rect) {
-  return { left: `${Math.round(rect.left)}px`, top: `${Math.round(rect.top)}px` };
+function hintPosition(rect, scrollX = 0, scrollY = 0) {
+  return {
+    left: `${Math.round(rect.left + scrollX)}px`,
+    top: `${Math.round(rect.top + scrollY)}px`,
+  };
 }
 
 function filterTargets(hints, typed) {
@@ -633,12 +643,12 @@ class HintsController {
     node.textContent = label;
     node.dataset.hintLabel = label;
 
-    // Position over the element. Labels are `position: fixed` (viewport-anchored),
-    // so we use the raw getBoundingClientRect viewport coordinates WITHOUT adding
-    // scroll — adding scroll would offset every label by the scroll amount on a
-    // scrolled page (the bug this fixes).
+    // Position over the element in DOCUMENT space (absolute layer scrolls with
+    // the page), so the label tracks its element through scrolling.
     if (typeof el.getBoundingClientRect === 'function') {
-      const pos = hintPosition(el.getBoundingClientRect());
+      const sx = (typeof window !== 'undefined' ? (window.scrollX || window.pageXOffset) : 0) || 0;
+      const sy = (typeof window !== 'undefined' ? (window.scrollY || window.pageYOffset) : 0) || 0;
+      const pos = hintPosition(el.getBoundingClientRect(), sx, sy);
       node.style.left = pos.left;
       node.style.top = pos.top;
     }

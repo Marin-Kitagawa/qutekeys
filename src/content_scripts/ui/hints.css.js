@@ -7,7 +7,7 @@
  */
 const HINTS_CSS = `
 .qs-hint {
-  position: fixed;
+  position: absolute;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -46,7 +46,10 @@ const HINTS_CSS = `
 }
 
 .qs-hint-layer {
-  position: fixed;
+  /* Absolute (NOT fixed) and anchored at the document origin, so the absolutely
+     positioned labels inside use document coordinates and scroll WITH the page,
+     staying glued to their target elements. */
+  position: absolute;
   top: 0;
   left: 0;
   width: 0;

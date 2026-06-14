@@ -43,6 +43,17 @@ await page.mouse.click(500, 350);
 await page.keyboard.press('f');
 await new Promise((r) => setTimeout(r, 400));
 await page.screenshot({ path: path.resolve(__dirname, '../dist/shot-hints-scrolled.png') });
-log('screenshot dist/shot-hints-scrolled.png written; pageerrors:', errs.length ? errs : 'none');
+log('screenshot 1 (hints shown at scroll 700) written');
+
+// THE FAILING SCENARIO: wheel-scroll AFTER hints are shown. Labels must follow.
+await page.evaluate(() => window.scrollBy(0, -250)); // scroll up 250px while hints visible
+await new Promise((r) => setTimeout(r, 300));
+const after = await page.evaluate(() => ['L1', 'L2', 'L3'].map((id) => {
+  const r = document.getElementById(id).getBoundingClientRect();
+  return { id, top: Math.round(r.top), visible: r.top >= 0 && r.top < innerHeight };
+}));
+log('link rects after scrolling UP 250 while hints up:', JSON.stringify(after));
+await page.screenshot({ path: path.resolve(__dirname, '../dist/shot-hints-after-scroll.png') });
+log('screenshot 2 (after scroll-up while hints up) written; pageerrors:', errs.length ? errs : 'none');
 
 await browser.close(); server.close(); log('done');

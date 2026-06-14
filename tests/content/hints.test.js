@@ -1,10 +1,14 @@
 /** @jest-environment jsdom */
 const { hintPosition } = require('../../src/content_scripts/hints');
-test('hintPosition uses viewport coords and ignores page scroll', () => {
-  // Labels are position:fixed, so scroll must NOT be added to the rect coords.
-  global.window = Object.assign(global.window || {}, { scrollX: 999, scrollY: 1234 });
-  const pos = hintPosition({ left: 100, top: 200 });
-  expect(pos).toEqual({ left: '100px', top: '200px' });
+test('hintPosition converts viewport rect to document coords (adds scroll)', () => {
+  // Labels are position:absolute in a document-anchored layer, so they must use
+  // document coordinates (rect + scroll) and thereby scroll with the page,
+  // staying glued to their target element.
+  const pos = hintPosition({ left: 100, top: 200 }, 30, 500);
+  expect(pos).toEqual({ left: '130px', top: '700px' });
+});
+test('hintPosition defaults scroll to 0', () => {
+  expect(hintPosition({ left: 10, top: 20 })).toEqual({ left: '10px', top: '20px' });
 });
 
 const {
