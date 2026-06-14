@@ -73,6 +73,25 @@ function registerSessionCommands(registry) {
       await writeSessions(sessions);
     },
   });
+
+  registry.register({
+    name: 'sessions-recently-closed',
+    description: 'Return recently closed tabs (used by omnibar recently-closed source)',
+    args: [],
+    context: 'background',
+    modes: ['normal'],
+    handler: async (_ctx, _parsed) => {
+      const entries = await api().sessions.getRecentlyClosed({ maxResults: 25 });
+      if (!Array.isArray(entries)) return [];
+      return entries
+        .filter(e => e.tab)
+        .map(e => ({
+          title: e.tab.title || e.tab.url || 'Closed tab',
+          url: e.tab.url || '',
+          sessionId: e.tab.sessionId,
+        }));
+    },
+  });
 }
 
 module.exports = { registerSessionCommands };

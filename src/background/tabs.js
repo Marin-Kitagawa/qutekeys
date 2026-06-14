@@ -211,6 +211,60 @@ function registerTabCommands(registry) {
   });
 
   registry.register({
+    name: 'tab-close-id',
+    description: 'Close a tab by id (used by omnibar close-tabs source)',
+    args: ['tabId'],
+    context: 'background',
+    modes: ['normal'],
+    handler: async (_ctx, parsed) => {
+      const id = parseInt(parsed.args && parsed.args[0], 10);
+      if (isNaN(id)) return;
+      return api().tabs.remove(id);
+    },
+  });
+
+  registry.register({
+    name: 'tab-move-to-window',
+    description: 'Move the current tab to a chosen window by id (used by omnibar windows source)',
+    args: ['windowId'],
+    context: 'background',
+    modes: ['normal'],
+    handler: async (ctx, parsed) => {
+      const tabId = ctx.sender && ctx.sender.tab && ctx.sender.tab.id;
+      if (!tabId) return;
+      const windowId = parseInt(parsed.args && parsed.args[0], 10);
+      if (isNaN(windowId)) return;
+      await api().tabs.move(tabId, { windowId, index: -1 });
+      const a = api();
+      if (a && a.windows && a.windows.update) {
+        await a.windows.update(windowId, { focused: true });
+      }
+    },
+  });
+
+  registry.register({
+    name: 'windows-list',
+    description: 'Return all open windows (used by omnibar windows source)',
+    args: [],
+    context: 'background',
+    modes: ['normal'],
+    handler: async (_ctx, _parsed) => {
+      const wins = await api().windows.getAll({ populate: true });
+      if (!Array.isArray(wins)) return [];
+      return wins.map(w => {
+        const activeTab = w.tabs && w.tabs.find(t => t.active);
+        const title = (activeTab && activeTab.title) || ('Window ' + w.id);
+        return {
+          id: w.id,
+          title,
+          tabCount: w.tabs ? w.tabs.length : 0,
+          focused: !!w.focused,
+        };
+      });
+    },
+  });
+
+  registry.register({
     name: 'tab-activate',
     description: 'Activate a tab by id, focusing its window',
     args: ['tabId'],

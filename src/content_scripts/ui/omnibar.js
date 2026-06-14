@@ -325,7 +325,7 @@ class Omnibar {
         break;
       case 'close-tab':
         if (this._messaging) {
-          this._messaging.sendMessage({ type: 'command', name: 'tab-close', args: [action.tabId], flags: {}, count: null }).catch(() => {});
+          this._messaging.sendMessage({ type: 'command', name: 'tab-close-id', args: [action.tabId], flags: {}, count: null }).catch(() => {});
         }
         break;
       case 'move-to-window':

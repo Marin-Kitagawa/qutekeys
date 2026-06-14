@@ -96,7 +96,7 @@ function fakeChrome(initial = {}) {
     sessions: (function() {
       const _restored = [];
       return {
-        getRecentlyClosed: async () => [{ tab: { sessionId: 's1', url: 'https://closed.com' } }],
+        getRecentlyClosed: async () => [{ tab: { sessionId: 's1', title: 'Closed', url: 'https://closed.com' } }],
         restore: async (id) => { _restored.push(id); return {}; },
         _restored,
       };
@@ -109,6 +109,7 @@ function fakeChrome(initial = {}) {
         return w;
       },
       update: async () => ({}),
+      getAll: async () => [{ id: 1, focused: true, tabs: [{ title: 'A', active: true }] }],
       _created: _windowsCreated,
     },
     storage: {
