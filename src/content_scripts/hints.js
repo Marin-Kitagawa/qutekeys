@@ -238,6 +238,19 @@ function collectTargets(root, selector) {
  * @param {string} typed
  * @returns {{ matches: typeof hints, exact: (typeof hints[0])|null }}
  */
+/**
+ * Compute the on-screen position for a hint label given a target's
+ * getBoundingClientRect(). Labels are rendered `position: fixed`, so these are
+ * VIEWPORT coordinates — scroll offset must NOT be added (doing so shifts every
+ * label by the scroll amount on a scrolled page).
+ *
+ * @param {{left:number, top:number}} rect
+ * @returns {{ left: string, top: string }}
+ */
+function hintPosition(rect) {
+  return { left: `${Math.round(rect.left)}px`, top: `${Math.round(rect.top)}px` };
+}
+
 function filterTargets(hints, typed) {
   const upper = typed.toUpperCase();
   const matches = hints.filter(h => h.label.startsWith(upper));
@@ -620,13 +633,14 @@ class HintsController {
     node.textContent = label;
     node.dataset.hintLabel = label;
 
-    // Position over the element (best-effort; jsdom always returns zero rects)
+    // Position over the element. Labels are `position: fixed` (viewport-anchored),
+    // so we use the raw getBoundingClientRect viewport coordinates WITHOUT adding
+    // scroll — adding scroll would offset every label by the scroll amount on a
+    // scrolled page (the bug this fixes).
     if (typeof el.getBoundingClientRect === 'function') {
-      const rect = el.getBoundingClientRect();
-      const scrollX = (typeof window !== 'undefined' ? window.scrollX : 0) || 0;
-      const scrollY = (typeof window !== 'undefined' ? window.scrollY : 0) || 0;
-      node.style.left = `${rect.left + scrollX}px`;
-      node.style.top = `${rect.top + scrollY}px`;
+      const pos = hintPosition(el.getBoundingClientRect());
+      node.style.left = pos.left;
+      node.style.top = pos.top;
     }
 
     return node;
@@ -867,5 +881,6 @@ module.exports = {
   isUrlLike,
   getTableColumnCells,
   joinYankedUrls,
+  hintPosition,
   HintsController,
 };

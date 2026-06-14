@@ -1,4 +1,12 @@
 /** @jest-environment jsdom */
+const { hintPosition } = require('../../src/content_scripts/hints');
+test('hintPosition uses viewport coords and ignores page scroll', () => {
+  // Labels are position:fixed, so scroll must NOT be added to the rect coords.
+  global.window = Object.assign(global.window || {}, { scrollX: 999, scrollY: 1234 });
+  const pos = hintPosition({ left: 100, top: 200 });
+  expect(pos).toEqual({ left: '100px', top: '200px' });
+});
+
 const {
   generateHintLabels,
   collectTargets,

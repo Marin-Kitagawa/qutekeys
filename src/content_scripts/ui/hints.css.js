@@ -7,7 +7,7 @@
  */
 const HINTS_CSS = `
 .qs-hint {
-  position: absolute;
+  position: fixed;
   display: inline-flex;
   align-items: center;
   justify-content: center;
