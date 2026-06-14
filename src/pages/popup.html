@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QuteSurf</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-width: 240px;
+      padding: 16px;
+      background: #1e1e2e;
+      color: #cdd6f4;
+    }
+    h1 { font-size: 1.1rem; font-weight: 700; margin-bottom: 6px;
+         background: linear-gradient(135deg, #89b4fa, #cba6f7);
+         -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+         background-clip: text; }
+    .version { font-size: 0.72rem; color: #6c7086; display: block; margin-bottom: 12px; }
+    .row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    label { font-size: 0.78rem; color: #a6adc8; min-width: 90px; }
+    select {
+      flex: 1;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 6px;
+      color: #cdd6f4;
+      padding: 4px 8px;
+      font-size: 0.82rem;
+    }
+    .divider { border: none; border-top: 1px solid rgba(255,255,255,0.07); margin: 10px 0; }
+    .btn-options {
+      width: 100%;
+      padding: 7px;
+      background: linear-gradient(135deg, #89b4fa, #cba6f7);
+      color: #1e1e2e;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .btn-options:hover { opacity: 0.85; }
+    .status { font-size: 0.75rem; color: #6c7086; margin-top: 8px; text-align: center; }
+  </style>
+</head>
+<body>
+  <h1 id="title">QuteSurf</h1>
+  <span class="version" id="version">v0.1.0</span>
+
+  <div class="row">
+    <label for="profile-quick">Profile</label>
+    <select id="profile-quick"></select>
+  </div>
+
+  <hr class="divider" />
+
+  <button class="btn-options" id="open-options-btn">Open Options</button>
+  <div class="status" id="status"></div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

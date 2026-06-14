@@ -1,0 +1,41 @@
+{
+  "name": "qutesurf",
+  "version": "0.1.0",
+  "description": "Keyboard web navigation combining qutebrowser and SurfingKeys.",
+  "scripts": {
+    "clean": "rimraf dist",
+    "build:chrome": "webpack --mode=production --env target=chrome --config ./config/webpack.config.js",
+    "build:firefox": "webpack --mode=production --env target=firefox --config ./config/webpack.config.js",
+    "build": "npm-run-all clean build:chrome build:firefox",
+    "dev:chrome": "webpack --mode=development --env target=chrome --watch --config ./config/webpack.config.js",
+    "package": "npm run build && node scripts/package.mjs",
+    "test": "jest",
+    "test:e2e": "jest tests/e2e"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/core": "^7.29.7",
+    "@babel/preset-env": "^7.29.7",
+    "@babel/preset-typescript": "^7.29.7",
+    "@types/jest": "^30.0.0",
+    "archiver": "^8.0.0",
+    "babel-jest": "^30.4.1",
+    "babel-loader": "^10.1.1",
+    "copy-webpack-plugin": "^14.0.0",
+    "css-loader": "^7.1.4",
+    "file-loader": "^6.2.0",
+    "jest": "^30.4.2",
+    "jest-environment-jsdom": "^30.4.1",
+    "jest-image-snapshot": "^6.5.2",
+    "npm-run-all": "^4.1.5",
+    "puppeteer": "^25.1.0",
+    "rimraf": "^6.1.3",
+    "string-replace-loader": "^3.3.0",
+    "style-loader": "^4.0.0",
+    "webpack": "^5.107.2",
+    "webpack-cli": "^7.0.3"
+  },
+  "dependencies": {
+    "ace-builds": "^1.44.0"
+  }
+}

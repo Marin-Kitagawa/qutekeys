@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>QuteSurf Settings Sandbox</title>
+</head>
+<body>
+  <!--
+    Sandboxed settings evaluator.
+
+    This page is declared under the manifest "sandbox" key, so it runs with an
+    opaque (null) origin, has NO access to chrome.* APIs, and is governed by the
+    "content_security_policy.sandbox" CSP — which is the ONLY place 'unsafe-eval'
+    is permitted. The privileged options page never evaluates user code itself;
+    it posts the source here and receives back the queued mutations.
+  -->
+  <script src="sandbox.js"></script>
+</body>
+</html>

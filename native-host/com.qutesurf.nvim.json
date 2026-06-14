@@ -1,0 +1,9 @@
+{
+  "name": "com.qutesurf.nvim",
+  "description": "QuteSurf Neovim bridge",
+  "path": "<ABSOLUTE_PATH_TO_host.js_OR_WRAPPER_SCRIPT>",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://<EXTENSION_ID>/"
+  ]
+}

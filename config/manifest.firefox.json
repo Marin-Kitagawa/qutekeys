@@ -1,0 +1,63 @@
+{
+  "manifest_version": 3,
+  "name": "QuteSurf",
+  "version": "0.1.0",
+  "icons": {
+    "16": "icons/16.png",
+    "48": "icons/48.png",
+    "128": "icons/128.png"
+  },
+  "action": {
+    "default_popup": "pages/popup.html",
+    "default_icon": {
+      "16": "icons/16.png",
+      "48": "icons/48.png"
+    }
+  },
+  "options_ui": {
+    "page": "pages/options.html",
+    "open_in_tab": true
+  },
+  "background": {
+    "scripts": ["background.js"],
+    "type": "module"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; base-uri 'none'"
+  },
+  "permissions": [
+    "tabs",
+    "bookmarks",
+    "history",
+    "storage",
+    "clipboardWrite",
+    "clipboardRead",
+    "downloads",
+    "sessions",
+    "proxy",
+    "nativeMessaging"
+  ],
+  "host_permissions": ["<all_urls>"],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "match_about_blank": true,
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_start",
+      "all_frames": true
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["pages/help.html", "pages/help.css", "pages/help.js", "chunks/*"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "qutesurf@local",
+      "strict_min_version": "121.0"
+    }
+  }
+}

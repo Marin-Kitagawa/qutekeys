@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QuteSurf — Options</title>
+  <link rel="stylesheet" href="options.css" />
+</head>
+<body>
+  <header>
+    <h1>QuteSurf</h1>
+    <span class="version" id="version">v0.1.0</span>
+    <span style="margin-left:auto; color:var(--subtext); font-size:0.8rem;">Options</span>
+  </header>
+
+  <!-- Profile -->
+  <section class="card" id="section-profile">
+    <h2>Active Profile</h2>
+    <div class="row">
+      <label for="profile-select">Profile</label>
+      <select id="profile-select"></select>
+    </div>
+  </section>
+
+  <!-- :set options -->
+  <section class="card" id="section-options">
+    <h2>:set Options</h2>
+    <table id="options-table">
+      <thead>
+        <tr>
+          <th>Key</th>
+          <th>Value</th>
+        </tr>
+      </thead>
+      <tbody id="options-tbody"></tbody>
+    </table>
+    <div class="btn-row">
+      <button class="btn-primary" id="save-options-btn">Save Options</button>
+    </div>
+    <div class="msg" id="options-msg"></div>
+  </section>
+
+  <!-- JS Settings editor -->
+  <section class="card" id="section-js">
+    <h2>JS Settings Script</h2>
+    <p style="color:var(--subtext); font-size:0.82rem; margin-bottom:12px;">
+      Use <code style="color:var(--accent)">mapkey</code>,
+      <code style="color:var(--accent)">imapkey</code>,
+      <code style="color:var(--accent)">vmapkey</code>,
+      <code style="color:var(--accent)">settings({})</code>,
+      <code style="color:var(--accent)">aliases()</code> and more —
+      SurfingKeys-compatible API.
+    </p>
+    <div class="editor-wrap">
+      <textarea id="js-editor" spellcheck="false" placeholder="// example:&#10;mapkey('gh', 'open github', 'omnibar-open https://github.com');&#10;settings({ hintcharacters: 'qwerty', smoothscroll: false });"></textarea>
+    </div>
+    <div class="btn-row">
+      <button class="btn-primary" id="run-js-btn">Run / Save</button>
+      <button class="btn-secondary" id="clear-js-btn">Clear</button>
+    </div>
+    <div class="msg" id="js-msg"></div>
+  </section>
+
+  <script src="options.js"></script>
+</body>
+</html>

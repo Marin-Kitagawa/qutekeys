@@ -1,0 +1,1215 @@
+= QuteSurf
+:toc: left
+:toc-title: Contents
+:toclevels: 3
+:sectnums:
+:icons: font
+:source-highlighter: highlight.js
+
+*Advanced keyboard-based web navigation for power users* — a cross-browser (Chrome + Firefox, Manifest V3) extension combining the philosophy of https://qutebrowser.org[qutebrowser] and https://github.com/brookhong/Surfingkeys[SurfingKeys] into one unified tool with switchable keymap profiles, a `:` command palette, full modal navigation, and a Modern Glass UI.
+
+---
+
+== What it is / What it solves
+
+=== The problem
+
+Modern browsers require a mouse for almost everything.
+Two excellent keyboard-navigation tools exist — qutebrowser and SurfingKeys — but they split the community: qutebrowser is a standalone Qt/Python browser (not an extension), so it cannot run inside Chrome or Firefox.
+SurfingKeys is an extension but uses its own key vocabulary.
+Power users who switch between browsers, or who use browser-specific tools, must maintain separate muscle memory for each.
+
+=== How QuteSurf solves it
+
+QuteSurf ships one extension that loads into both Chrome and Firefox (Manifest V3) and offers *three hot-swappable keymap profiles*:
+
+* `qute` — faithful to qutebrowser default bindings
+* `surfingkeys` — faithful to SurfingKeys default bindings
+* `hybrid` — curated best-of-both (default)
+
+A single *command registry* is the spine: every action is a named command.
+Profiles are just `keySequence → commandName` maps.
+The `:` key opens a command palette (omnibar) that exposes every command by name, making the tool discoverable.
+
+.Honest scope note
+[NOTE]
+A WebExtension cannot own the browser chrome, replace the native URL bar, render tabs natively, or run qutebrowser's Python config files.
+These capabilities are approximated with extension-level equivalents (omnibar overlay, tabs API, unified JS config).
+
+---
+
+== Features
+
+=== Modes (mode stack, qutebrowser semantics)
+
+* *Normal* — keyboard navigation active
+* *Insert* — key events passed through to the page; `<Escape>` returns to Normal
+* *Visual / Caret* — vim-like text selection with `h/j/k/l/w/b/0/$` motions
+* *Hints* — link/element selection overlay; `<Escape>` cancels
+* *Command* — omnibar / command palette open
+* *Find* — in-page text search bar active
+* *PassThrough* — all keys forwarded to the page until `<Escape>`
+
+=== Hints
+
+* `hint` — follow links and buttons
+* `hint-newtab` — open in a new tab
+* `hint-yank` — copy URL or text of element
+* `hint-hover` — trigger mouseover
+* `hint-input` — focus an input field
+* `hint-download` — download a link
+* `hint-images` — open selected image in a new tab
+* `hint-multi` — follow multiple targets without closing hint mode
+* `hint-text` — copy visible text of selected element
+
+Hint labels render as violet gradient chips (`#7c5cff` → `#a855f7`) with soft glow in a Shadow-DOM overlay.
+
+=== Omnibar
+
+Fuzzy-matched floating panel with source badges:
+
+* URL + search (resolved via search-engine aliases)
+* Bookmarks
+* Browser history
+* Open tabs
+* Commands (`:` invocable commands)
+* Marks and quickmarks
+
+=== Navigation and scrolling
+
+Cardinal scroll (`j/k/h/l`), half-page (`Ctrl-D/U`), full-page (`Ctrl-F/B`), scroll to top/bottom (`gg/G`), percentage (`scroll-to-perc`), back/forward (`H/L`), reload (`r`), hard-reload (`R` in qute profile), stop, URL-up (`gu`), URL-root (`gU`), home.
+
+=== Tabs
+
+New, close, clone, pin, mute, move, undo-close, next/prev (wrapping), first, last, go-to-by-index, detach to new window, close-all-others.
+
+=== Find
+
+In-page forward search (`/`), `n`/`N` for next/previous match.
+Options: case-sensitive, regex mode.
+Glass find bar.
+
+=== Yank / clipboard
+
+Yank URL, page title, Markdown link (`[title](url)`), selection, focused anchor.
+Paste-and-go (current tab) and paste-and-go-newtab — clipboard content is scheme-filtered before navigation (dangerous schemes become search queries).
+
+=== Visual / caret mode
+
+Vim-like text selection.
+Caret mode places a movable cursor; Visual mode extends selection.
+`y` yanks selection to clipboard.
+
+=== Marks and quickmarks
+
+Local marks (URL + scroll position) set and jumped by a one-shot key capture.
+Quickmarks: save (`m` + key) and open (`b` + key / `B` for new tab) in qute/hybrid profiles.
+`omnibar-marks` lists all marks in the omnibar.
+
+=== Sessions
+
+Named save/restore of the current window's tabs:
+`:session-save work`, `:session-load work`, `:session-list`, `:session-delete work`.
+
+=== Search-engine aliases
+
+Seven built-in aliases (see <<search-engine-aliases>>).
+Use in the omnibar: `g cats` searches Google for "cats".
+Add custom aliases via the JS settings API or `:set`.
+
+=== Proxy / PAC
+
+Generate and apply a PAC script from per-host rules:
+`proxy-set`, `proxy-clear`, `proxy-toggle-host`.
+Requires the `proxy` browser permission (already declared).
+
+=== Per-domain userscripts (Greasemonkey-lite)
+
+Store JS snippets with `@match` / `@name` metadata via the options page.
+Matched scripts are injected into the page world at `document_idle`.
+They run with page-level privileges, not extension privileges.
+
+=== Embedded ACE Vim editor
+
+`edit-with-vim` opens any focused `<input>`, `<textarea>`, or `contenteditable` in an ACE editor with Vim keybindings, rendered in the Shadow-DOM host.
+ACE loads as a ~571 KiB lazy chunk on first use.
+
+=== Real Neovim via native messaging
+
+`edit-with-nvim` uses the `com.qutesurf.nvim` native-messaging host to open the field in a real Neovim instance.
+Falls back to the ACE editor if the host is not installed.
+See <<embedded-vim-editor-and-neovim>>.
+
+=== Unified configuration
+
+Three ways to configure, all writing to the same `chrome.storage.local` store:
+
+. `:set` / `:bind` / `:unbind` at runtime in the command palette
+. JS settings API in the options page (sandboxed iframe)
+. GUI options page (profile dropdown + settings table + JS editor)
+
+=== Generated help / cheatsheet
+
+`?` or `:help` opens a searchable cheatsheet page built from the command registry and the active profile's bindings, grouped by category.
+
+=== Modern Glass UI
+
+Translucent blurred panels, centered floating command palette, violet accent (`#7c5cff`), soft shadows, rounded corners, dark theme default, themeable via CSS variables.
+
+---
+
+== Install
+
+=== Prerequisites
+
+* https://nodejs.org[Node.js] ≥ 18
+* npm ≥ 9
+
+=== Build from source
+
+[source,shell]
+----
+git clone <repo-url> qutesurf
+cd qutesurf
+npm install
+npm run build
+----
+
+This produces `dist/chrome/` and `dist/firefox/`.
+
+=== Load in Chrome
+
+. Open `chrome://extensions`
+. Enable *Developer mode* (toggle, top-right)
+. Click *Load unpacked*
+. Select the `dist/chrome` directory
+
+=== Load in Firefox
+
+. Open `about:debugging`
+. Click *This Firefox*
+. Click *Load Temporary Add-on…*
+. Select `dist/firefox/manifest.json`
+
+[NOTE]
+The Firefox build is temporary (unloaded on browser restart).
+For persistent installation, sign and distribute a `.xpi` via the standard Firefox AMO process.
+
+=== Produce distributable zips
+
+[source,shell]
+----
+npm run package
+----
+
+Produces `qutesurf-chrome.zip` and `qutesurf-firefox.zip` in the project root.
+
+---
+
+== Keymap profiles
+
+Three built-in profiles are included.
+The default is `hybrid`.
+
+|===
+| Profile | Lineage | Description
+
+| `qute`
+| qutebrowser
+| Faithful translation of qutebrowser's default normal-mode bindings.
+
+| `surfingkeys`
+| SurfingKeys
+| Faithful translation of SurfingKeys' default bindings.
+
+| `hybrid`
+| Both
+| Curated best-of-both: qutebrowser backbone with SurfingKeys aliases where they do not collide.
+|===
+
+=== Switching profiles
+
+* *Options page dropdown* — `chrome://extensions` → QuteSurf → Options
+* *Popup quick-switch* — click the QuteSurf toolbar icon
+* *Command palette* — `:profile qute` / `:profile surfingkeys` / `:profile hybrid`
+
+---
+
+== Keybinding reference
+
+All bindings below are transcribed directly from `src/profiles/qute.js`, `src/profiles/surfingkeys.js`, and `src/profiles/hybrid.js`.
+
+=== qute profile
+
+Normal mode:
+
+|===
+| Keys | Command | Description
+
+| `o` | `omnibar-open` | Open omnibar (URL / history / bookmarks)
+| `O` | `omnibar-open-newtab` | Open omnibar — open result in new tab
+| `go` | `omnibar-open` | Open omnibar pre-filling current URL
+| `:` | `cmdline` | Open command palette
+| `T` | `omnibar-tabs` | Switch tabs via omnibar
+| `J` | `tab-next` | Switch to next tab (wraps)
+| `K` | `tab-prev` | Switch to previous tab (wraps)
+| `d` | `tab-close` | Close the current tab
+| `D` | `tab-close` | Close the current tab (alternate)
+| `co` | `tab-only` | Close all other tabs
+| `gC` | `tab-clone` | Duplicate the current tab
+| `gm` | `tab-move` | Move the current tab
+| `u` | `tab-undo` | Restore the most recently closed tab
+| `ga` | `tab-new` | Open a new tab
+| `<Ctrl-T>` | `tab-new` | Open a new tab
+| `<Ctrl-p>` | `tab-pin` | Toggle pin state
+| `<Alt-m>` | `tab-mute` | Toggle mute state
+| `H` | `back` | Go back in history
+| `L` | `forward` | Go forward in history
+| `r` | `reload` | Reload the current page
+| `R` | `reload-hard` | Hard-reload the current page
+| `gu` | `url-up` | Navigate up one URL path segment
+| `gU` | `url-root` | Navigate to the URL origin root
+| `<Ctrl-h>` | `home` | Navigate to the site root
+| `<Ctrl-s>` | `stop` | Stop loading
+| `h` | `scroll-left` | Scroll left
+| `j` | `scroll-down` | Scroll down
+| `k` | `scroll-up` | Scroll up
+| `l` | `scroll-right` | Scroll right
+| `gg` | `scroll-to-top` | Scroll to the top of the page
+| `G` | `scroll-to-bottom` | Scroll to the bottom of the page
+| `<Ctrl-F>` | `scroll-page-down` | Scroll one full page down
+| `<Ctrl-B>` | `scroll-page-up` | Scroll one full page up
+| `<Ctrl-D>` | `scroll-halfpage-down` | Scroll half a page down
+| `<Ctrl-U>` | `scroll-halfpage-up` | Scroll half a page up
+| `f` | `hint` | Show hints and follow selected link
+| `F` | `hint-newtab` | Show hints and open in new tab
+| `;i` | `hint-images` | Hints for images
+| `;y` | `hint-yank` | Hints — copy URL
+| `;h` | `hint-hover` | Hints — hover element
+| `;t` | `hint-input` | Hints — focus input
+| `;d` | `hint-download` | Hints — download link
+| `;b` | `hint-newtab` | Hints — open in background tab
+| `;r` | `hint-multi` | Hints — multi-select follow
+| `/` | `find` | Open find bar and search forward
+| `n` | `find-next` | Jump to next match
+| `N` | `find-prev` | Jump to previous match
+| `yy` | `yank-url` | Copy current page URL
+| `yt` | `yank-title` | Copy current page title
+| `ym` | `yank-mdlink` | Copy Markdown link for current page
+| `pp` | `paste-and-go` | Paste and navigate
+| `Pp` | `paste-and-go-newtab` | Paste and open in new tab
+| `m` | `quickmark-save` | Save a quickmark (next key = name)
+| `b` | `quickmark-open` | Open a quickmark (next key = name)
+| `B` | `quickmark-open-newtab` | Open a quickmark in new tab
+| `` ` `` | `mark-set` | Set a mark (next key = char)
+| `'` | `mark-jump` | Jump to a mark (next key = char)
+| `i` | `mode-insert` | Enter Insert mode
+| `v` | `caret-mode` | Enter Caret mode
+| `<Ctrl-V>` | `mode-passthrough` | Enter PassThrough mode
+|===
+
+Insert mode:
+
+|===
+| Keys | Command | Description
+
+| `<Escape>` | `mode-normal` | Return to Normal mode
+|===
+
+Visual mode:
+
+|===
+| Keys | Command | Description
+
+| `y` | `yank-selection` | Copy the text selection
+| `<Escape>` | `mode-normal` | Return to Normal mode
+|===
+
+=== surfingkeys profile
+
+Normal mode:
+
+|===
+| Keys | Command | Description
+
+| `E` | `tab-prev` | Switch to previous tab
+| `R` | `tab-next` | Switch to next tab
+| `x` | `tab-close` | Close the current tab
+| `X` | `tab-undo` | Restore the most recently closed tab
+| `yt` | `tab-clone` | Duplicate the current tab
+| `on` | `tab-new` | Open a new tab
+| `T` | `omnibar-tabs` | Switch tabs via omnibar
+| `S` | `back` | Go back in history
+| `D` | `forward` | Go forward in history
+| `r` | `reload` | Reload the current page
+| `gu` | `url-up` | Navigate up one URL path segment
+| `gU` | `url-root` | Navigate to the URL origin root
+| `t` | `omnibar-open` | Open omnibar
+| `b` | `omnibar-bookmarks` | Search bookmarks in omnibar
+| `oh` | `omnibar-history` | Search history in omnibar
+| `om` | `omnibar-marks` | Jump to a mark via omnibar
+| `:` | `cmdline` | Open command palette
+| `j` | `scroll-down` | Scroll down
+| `k` | `scroll-up` | Scroll up
+| `h` | `scroll-left` | Scroll left
+| `l` | `scroll-right` | Scroll right
+| `e` | `scroll-halfpage-up` | Scroll half a page up
+| `d` | `scroll-halfpage-down` | Scroll half a page down
+| `U` | `scroll-page-up` | Scroll one full page up
+| `P` | `scroll-page-down` | Scroll one full page down
+| `gg` | `scroll-to-top` | Scroll to the top of the page
+| `G` | `scroll-to-bottom` | Scroll to the bottom of the page
+| `f` | `hint` | Show hints and follow selected link
+| `af` | `hint-newtab` | Show hints and open in new tab
+| `i` | `hint-input` | Show hints — focus input
+| `ya` | `hint-yank` | Show hints — copy URL
+| `/` | `find` | Open find bar and search forward
+| `n` | `find-next` | Jump to next match
+| `N` | `find-prev` | Jump to previous match
+| `yy` | `yank-url` | Copy current page URL
+| `yl` | `yank-title` | Copy current page title
+| `m` | `mark-set` | Set a mark (next key = char)
+| `'` | `mark-jump` | Jump to a mark (next key = char)
+| `<<` | `tab-move` | Move tab left
+| `>>` | `tab-move` | Move tab right
+| `cp` | `proxy-toggle-host` | Toggle proxy for current host
+| `v` | `caret-mode` | Enter Caret mode
+|===
+
+Insert mode:
+
+|===
+| Keys | Command | Description
+
+| `<Escape>` | `mode-normal` | Return to Normal mode
+|===
+
+Visual mode:
+
+|===
+| Keys | Command | Description
+
+| `y` | `yank-selection` | Copy the text selection
+| `<Escape>` | `mode-normal` | Return to Normal mode
+|===
+
+=== hybrid profile
+
+The hybrid profile merges the qutebrowser backbone with SurfingKeys aliases.
+Where both profiles bind a key to different commands, qutebrowser wins except for `R` (tab-next from SurfingKeys, since `J` is the primary tab-next binding) and `D` (forward from SurfingKeys, since `L` is also available).
+
+Normal mode:
+
+|===
+| Keys | Command | Description
+
+| `o` | `omnibar-open` | Open omnibar (URL / history / bookmarks)
+| `O` | `omnibar-open-newtab` | Open omnibar — open result in new tab
+| `t` | `omnibar-open` | Open omnibar (SurfingKeys alias)
+| `T` | `omnibar-tabs` | Switch tabs via omnibar
+| `:` | `cmdline` | Open command palette
+| `b` | `quickmark-open` | Open a quickmark (next key = name)
+| `oh` | `omnibar-history` | Search history in omnibar
+| `om` | `omnibar-marks` | Jump to a mark via omnibar
+| `J` | `tab-next` | Switch to next tab (qute primary)
+| `K` | `tab-prev` | Switch to previous tab (qute primary)
+| `E` | `tab-prev` | Switch to previous tab (SK alias)
+| `R` | `tab-next` | Switch to next tab (SK alias)
+| `d` | `tab-close` | Close the current tab
+| `x` | `tab-close` | Close the current tab (SK alias)
+| `X` | `tab-undo` | Restore the most recently closed tab (SK)
+| `u` | `tab-undo` | Restore the most recently closed tab (qute)
+| `co` | `tab-only` | Close all other tabs
+| `gC` | `tab-clone` | Duplicate the current tab
+| `gm` | `tab-move` | Move the current tab
+| `ga` | `tab-new` | Open a new tab
+| `<Ctrl-p>` | `tab-pin` | Toggle pin state
+| `<Alt-m>` | `tab-mute` | Toggle mute state
+| `H` | `back` | Go back in history (qute primary)
+| `S` | `back` | Go back in history (SK alias)
+| `L` | `forward` | Go forward in history (qute primary)
+| `D` | `forward` | Go forward in history (SK alias)
+| `r` | `reload` | Reload the current page
+| `gu` | `url-up` | Navigate up one URL path segment
+| `gU` | `url-root` | Navigate to the URL origin root
+| `<Ctrl-h>` | `home` | Navigate to the site root
+| `<Ctrl-s>` | `stop` | Stop loading
+| `h` | `scroll-left` | Scroll left
+| `j` | `scroll-down` | Scroll down
+| `k` | `scroll-up` | Scroll up
+| `l` | `scroll-right` | Scroll right
+| `gg` | `scroll-to-top` | Scroll to the top of the page
+| `G` | `scroll-to-bottom` | Scroll to the bottom of the page
+| `e` | `scroll-halfpage-up` | Scroll half a page up (SK)
+| `U` | `scroll-page-up` | Scroll one full page up (SK)
+| `<Ctrl-D>` | `scroll-halfpage-down` | Scroll half a page down
+| `<Ctrl-U>` | `scroll-halfpage-up` | Scroll half a page up
+| `<Ctrl-F>` | `scroll-page-down` | Scroll one full page down
+| `<Ctrl-B>` | `scroll-page-up` | Scroll one full page up
+| `f` | `hint` | Show hints and follow selected link
+| `F` | `hint-newtab` | Open selected link in new tab
+| `af` | `hint-newtab` | Open selected link in new tab (SK alias)
+| `;i` | `hint-images` | Hints for images
+| `;y` | `hint-yank` | Hints — copy URL
+| `ya` | `hint-yank` | Hints — copy URL (SK alias)
+| `;h` | `hint-hover` | Hints — hover element
+| `;t` | `hint-input` | Hints — focus input
+| `;d` | `hint-download` | Hints — download link
+| `;r` | `hint-multi` | Hints — multi-select follow
+| `/` | `find` | Open find bar and search forward
+| `n` | `find-next` | Jump to next match
+| `N` | `find-prev` | Jump to previous match
+| `yy` | `yank-url` | Copy current page URL
+| `yt` | `yank-title` | Copy current page title (qute)
+| `yl` | `yank-title` | Copy current page title (SK alias)
+| `ym` | `yank-mdlink` | Copy Markdown link for current page
+| `pp` | `paste-and-go` | Paste and navigate
+| `Pp` | `paste-and-go-newtab` | Paste and open in new tab
+| `m` | `mark-set` | Set a mark (next key = char)
+| `'` | `mark-jump` | Jump to a mark (next key = char)
+| `` ` `` | `mark-set` | Set a mark (next key = char, qute alternate)
+| `B` | `quickmark-open-newtab` | Open a quickmark in new tab
+| `cp` | `proxy-toggle-host` | Toggle proxy for current host
+| `i` | `mode-insert` | Enter Insert mode
+| `v` | `caret-mode` | Enter Caret mode
+| `<Ctrl-V>` | `mode-passthrough` | Enter PassThrough mode
+|===
+
+Insert mode:
+
+|===
+| Keys | Command | Description
+
+| `<Escape>` | `mode-normal` | Return to Normal mode
+|===
+
+Visual mode:
+
+|===
+| Keys | Command | Description
+
+| `y` | `yank-selection` | Copy the text selection
+| `<Escape>` | `mode-normal` | Return to Normal mode
+|===
+
+---
+
+== Command reference
+
+All commands below are transcribed from `src/commands/*.js`, `src/background/*.js`, and `src/profiles/index.js` (CANONICAL_COMMANDS list).
+
+=== Navigation
+
+|===
+| Command | Description
+
+| `scroll-down` | Scroll down
+| `scroll-up` | Scroll up
+| `scroll-left` | Scroll left
+| `scroll-right` | Scroll right
+| `scroll-halfpage-down` | Scroll half a page down
+| `scroll-halfpage-up` | Scroll half a page up
+| `scroll-page-down` | Scroll one full page down
+| `scroll-page-up` | Scroll one full page up
+| `scroll-to-top` | Scroll to the top of the page
+| `scroll-to-bottom` | Scroll to the bottom of the page
+| `scroll-to-perc` | Scroll to a percentage of page height (count = %; no count → bottom)
+| `back` | Go back in browser history
+| `forward` | Go forward in browser history
+| `reload` | Reload the current page
+| `reload-hard` | Hard-reload the current page (note: `location.reload(true)` is deprecated; behaves as a regular reload)
+| `stop` | Stop loading the current page
+| `url-up` | Navigate up one path segment in the current URL
+| `url-root` | Navigate to the origin root of the current URL
+| `home` | Navigate to the origin root (stub: no homepage config yet)
+|===
+
+=== Hints
+
+|===
+| Command | Description
+
+| `hint` | Show hints and follow the selected link or button
+| `hint-newtab` | Show hints and open the selected link in a new tab
+| `hint-yank` | Show hints and copy the URL or text of the selected element
+| `hint-hover` | Show hints and hover (mouseover) the selected element
+| `hint-input` | Show hints and focus the selected input field
+| `hint-download` | Show hints and download the selected link
+| `hint-images` | Show hints for images and open the selected image in a new tab
+| `hint-multi` | Show hints and follow multiple targets without closing hint mode
+| `hint-text` | Show hints and copy the visible text of the selected element
+|===
+
+=== Tabs
+
+|===
+| Command | Description
+
+| `tab-new` | Open a new tab, optionally with a URL
+| `tab-close` | Close the current tab
+| `tab-clone` | Duplicate the current tab
+| `tab-next` | Switch to the next tab (wraps around)
+| `tab-prev` | Switch to the previous tab (wraps around)
+| `tab-first` | Switch to the first tab
+| `tab-last` | Switch to the last tab
+| `tab-pin` | Toggle pin state of the current tab
+| `tab-mute` | Toggle mute state of the current tab
+| `tab-move` | Move the current tab; arg = absolute index or `+/-N`
+| `tab-undo` | Restore the most recently closed tab
+| `tab-only` | Close all tabs in the window except the current one
+| `tab-detach` | Move the current tab to a new window
+| `tab-goto` | Switch to tab by 1-based index
+| `tab-list` | Return all open tabs (used by the omnibar tabs source)
+| `tab-activate` | Activate a tab by id, focusing its window
+|===
+
+=== Omnibar
+
+|===
+| Command | Description
+
+| `omnibar-open` | Open omnibar with URL / history / bookmarks source
+| `omnibar-open-newtab` | Open omnibar — result opens in a new tab
+| `omnibar-bookmarks` | Search bookmarks in the omnibar
+| `omnibar-history` | Search browser history in the omnibar
+| `omnibar-tabs` | Switch between open tabs via the omnibar
+| `omnibar-commands` | Run a command via the omnibar
+| `omnibar-marks` | Jump to a mark via the omnibar
+| `cmdline` | Open the command palette (`:`)
+|===
+
+=== Find
+
+|===
+| Command | Description
+
+| `find` | Open the find bar and search forward
+| `find-next` | Jump to the next search match
+| `find-prev` | Jump to the previous search match
+|===
+
+=== Clipboard / yank
+
+|===
+| Command | Description
+
+| `yank-url` | Copy the current page URL to the clipboard
+| `yank-title` | Copy the current page title to the clipboard
+| `yank-mdlink` | Copy a Markdown link `[title](url)` for the current page
+| `yank-selection` | Copy the current text selection to the clipboard
+| `yank-anchor` | Copy the href of the focused/hovered anchor
+| `paste-and-go` | Read clipboard and navigate to the URL (or search the text)
+| `paste-and-go-newtab` | Read clipboard and open the URL (or search) in a new tab
+|===
+
+=== Visual / caret
+
+|===
+| Command | Description
+
+| `caret-mode` | Enter caret mode — navigate with a collapsed text cursor
+| `visual-mode` | Enter visual mode — extend text selection with vi motions
+| `selection-toggle` | Toggle between caret (move) and visual (extend) behavior
+|===
+
+=== Marks
+
+|===
+| Command | Description
+
+| `mark-set` | Set a mark at the current scroll position (next key = mark char)
+| `mark-jump` | Jump to a saved mark (next key = mark char)
+| `quickmark-save` | Save a quickmark for the current URL (next key = quickmark name)
+| `quickmark-open` | Open a quickmark in the current tab (next key = quickmark name)
+| `quickmark-open-newtab` | Open a quickmark in a new tab (next key = quickmark name)
+|===
+
+=== Sessions
+
+|===
+| Command | Description
+
+| `session-save` | Save the current window's tabs as a named session (arg: name)
+| `session-load` | Open all tabs from a named session (arg: name)
+| `session-list` | Return the names of all saved sessions
+| `session-delete` | Delete a named session (arg: name)
+|===
+
+=== Proxy
+
+|===
+| Command | Description
+
+| `proxy-set` | Add or update a proxy rule for a host pattern (args: pattern proxyString)
+| `proxy-clear` | Clear all proxy rules and restore direct connection
+| `proxy-toggle-host` | Toggle proxy for a specific host (uses the stored default proxy)
+|===
+
+=== Userscripts
+
+|===
+| Command | Description
+
+| `userscript-add` | Add a userscript (opens the options page for authoring)
+| `userscript-list` | List names of all installed userscripts
+| `userscript-remove` | Remove a userscript by name (arg: name)
+|===
+
+=== Editor
+
+|===
+| Command | Description
+
+| `edit-with-vim` | Open the focused input/textarea/contenteditable in the embedded ACE Vim editor
+| `edit-with-nvim` | Open the focused input/textarea/contenteditable in Neovim (falls back to ACE)
+|===
+
+=== Background data commands
+
+|===
+| Command | Description
+
+| `history-search` | Search browser history (arg: query; used by omnibar history source)
+| `bookmark-search` | Search bookmarks (arg: query; used by omnibar bookmarks source)
+| `download-url` | Download a URL via the browser downloads API (arg: url; scheme-checked)
+|===
+
+=== Settings and help
+
+|===
+| Command | Description
+
+| `set` | Set a configuration option. Usage: `:set <key> <value>`
+| `bind` | Add a key binding for a mode. Usage: `:bind <mode> <seq> <command>`
+| `unbind` | Remove a key binding for a mode. Usage: `:unbind <mode> <seq>`
+| `profile` | Switch the active keymap profile. Usage: `:profile <name>`
+| `mode-insert` | Enter Insert mode
+| `mode-normal` | Return to Normal mode
+| `mode-passthrough` | Enter PassThrough mode (all keys forwarded to page)
+| `help` | Show the keybinding cheatsheet in a new tab
+|===
+
+---
+
+== The command palette (`:`)
+
+Pressing `:` (or running `cmdline`) opens the command palette — a centered floating omnibar pre-filtered to the *commands* source.
+Type any command name (fuzzy-matched) and press `Enter` to run it.
+
+=== Syntax
+
+[source]
+----
+:<command> [args...] [-flag] [--longflag]
+----
+
+* *Positional args* — passed in order to the command handler
+* *Short flags* — single letter, e.g. `-t` (new-tab modifier)
+* *Long flags* — e.g. `--rapid`
+* *Quoted args* — `"my session name"` is treated as one argument
+* *Command chaining* — `;;` runs multiple commands in sequence
+
+=== Examples
+
+[source]
+----
+:open https://example.com           ← navigate to URL
+:open -t example.com                ← open in new tab
+:tab-close                          ← close current tab
+:session-save work                  ← save a named session
+:session-load work                  ← restore a named session
+:set hintcharacters asdfg           ← change hint charset at runtime
+:set smoothscroll false             ← disable smooth scrolling
+:bind normal gh open https://example.com  ← add a keybinding
+:unbind normal gh                   ← remove a keybinding
+:profile qute                       ← switch to qute profile
+:proxy-set *.example.com "PROXY 127.0.0.1:8080"
+:proxy-clear
+:tab-close ;; open example.com      ← chain two commands
+----
+
+---
+
+== Configuration
+
+There are three configuration paths, all reading from and writing to the same `chrome.storage.local` key (`qutesurf:config`).
+
+=== (a) `:set` / `:bind` / `:unbind` at runtime
+
+Open the command palette (`:`) and type commands directly.
+
+.`:set` options (from `src/core/config.js` `DEFAULTS`)
+
+|===
+| Option | Default | Description
+
+| `hintcharacters` | `asdfg` | Characters used to generate hint labels
+| `scrollstep` | `70` | Pixels per cardinal-direction scroll step
+| `smoothscroll` | `true` | Enable CSS smooth-scroll behavior
+| `findcasesensitive` | `false` | Case-sensitive in-page find
+| `defaultsearchengine` | `g` | Default search engine alias used when input is not a URL
+|===
+
+Values are coerced: `"true"` / `"false"` become booleans; numeric strings become numbers; everything else stays a string.
+
+=== (b) JS settings API
+
+The options page includes a JS editor that runs in a sandboxed `<iframe>` (opaque origin, no `chrome.*` access).
+Write JavaScript using the SurfingKeys-compatible API:
+
+[source,javascript]
+----
+// Bind keys
+mapkey('gh', 'open home page', 'omnibar-open');
+imapkey('<Ctrl-e>', 'edit-with-vim');
+vmapkey('Y', 'yank-selection');
+
+// Remove a binding
+unmap('v');
+
+// Set options in bulk
+settings({
+  hintcharacters: 'qwerty',
+  smoothscroll: false,
+});
+
+// Add a custom search engine alias
+aliases('npm', 'https://www.npmjs.com/search?q=%s');
+
+// Hints helpers (SurfingKeys compatibility)
+Hints.setCharacters('asdfjkl;');
+Hints.style('font-size: 12pt;');   // no-op stub
+
+// Visual helper (stub)
+Visual.style('color', 'red');      // no-op stub
+----
+
+.Available JS API functions
+[cols="1,3"]
+|===
+| Function | Description
+
+| `mapkey(seq, annotation, cmd)` or `mapkey(seq, cmd)` | Bind in Normal mode
+| `imapkey(seq, cmd)` | Bind in Insert mode
+| `vmapkey(seq, cmd)` | Bind in Visual mode
+| `map(newKey, oldKey)` | Remap (no-op-safe stub; does not crash existing SurfingKeys scripts)
+| `unmap(seq, mode?)` | Remove a Normal-mode binding (or specify mode)
+| `iunmap(seq)` | Remove an Insert-mode binding
+| `vunmap(seq)` | Remove a Visual-mode binding
+| `unmapAllExcept(seqs, mode)` | No-op-safe stub (for SurfingKeys script compatibility)
+| `settings(obj)` | Set multiple options at once
+| `aliases(alias, urlTemplate)` | Add a custom search-engine alias
+| `Hints.setCharacters(chars)` | Set hint characters (delegates to `settings`)
+| `Hints.style(css, type)` | No-op stub (SurfingKeys compatibility)
+| `Visual.style(element, css)` | No-op stub (SurfingKeys compatibility)
+|===
+
+[NOTE]
+The sandbox runs in an `<iframe sandbox="allow-scripts">` with an opaque/null origin.
+`'unsafe-eval'` is scoped *only* to that frame by the `sandbox` CSP directive.
+The privileged extension pages have a strict `script-src 'self'` CSP with no `unsafe-eval`.
+
+=== (c) Options GUI
+
+Access via `chrome://extensions` → QuteSurf → Options (or the popup).
+
+The page provides:
+
+* *Profile dropdown* — select `qute`, `surfingkeys`, or `hybrid`
+* *Options table* — view and edit all `:set` options from DEFAULTS
+* *JS editor textarea* — paste a settings script and click Save
+
+---
+
+== Search-engine aliases
+
+Aliases are resolved by the omnibar: type `<alias> <query>` to search.
+A bare URL is navigated directly; a plain word or phrase uses the `defaultsearchengine`.
+
+.Built-in aliases (from `src/core/search-engines.js` `DEFAULT_ENGINES`)
+
+|===
+| Alias | Engine | URL template
+
+| `g` | Google | `https://www.google.com/search?q=%s`
+| `d` | DuckDuckGo | `https://duckduckgo.com/?q=%s`
+| `b` | Bing | `https://www.bing.com/search?q=%s`
+| `w` | Wikipedia | `https://en.wikipedia.org/wiki/Special:Search?search=%s`
+| `gh` | GitHub | `https://github.com/search?q=%s`
+| `so` | StackOverflow | `https://stackoverflow.com/search?q=%s`
+| `yt` | YouTube | `https://www.youtube.com/results?search_query=%s`
+|===
+
+.Omnibar usage examples
+[source]
+----
+g cats              → https://www.google.com/search?q=cats
+so async await      → https://stackoverflow.com/search?q=async+await
+gh qutesurf         → https://github.com/search?q=qutesurf
+example.com         → http://example.com   (URL-like, navigated directly)
+hello world         → Google search (falls back to defaultsearchengine)
+----
+
+.Add a custom alias via the JS settings API
+[source,javascript]
+----
+aliases('mdn', 'https://developer.mozilla.org/en-US/search?q=%s');
+----
+
+.Add a custom alias via `:set`
+[source]
+----
+:set searchengines {"mdn":{"name":"MDN","url":"https://developer.mozilla.org/en-US/search?q=%s"}}
+----
+
+---
+
+== Sessions, proxy, and userscripts
+
+=== Sessions
+
+Sessions save and restore all tabs in the current window.
+
+[source]
+----
+:session-save work            ← save current tabs as "work"
+:session-load work            ← open all saved tabs
+:session-list                 ← list all saved session names
+:session-delete work          ← delete a session
+----
+
+Sessions are stored in `chrome.storage.local` and survive browser restarts.
+
+=== Proxy / PAC
+
+QuteSurf generates a PAC script from per-host rules applied via `chrome.proxy.settings`.
+
+[source]
+----
+:proxy-set *.corp.example.com "PROXY 10.0.0.1:3128"
+:proxy-set *.internal "SOCKS5 127.0.0.1:1080"
+:proxy-toggle-host example.com       ← toggle proxy on/off for one host
+:proxy-clear                         ← remove all rules; restore DIRECT
+----
+
+The `cp` key (`proxy-toggle-host`) in the surfingkeys and hybrid profiles uses the first stored rule's proxy as the default proxy for the toggled host.
+
+=== Userscripts
+
+Userscripts are stored via the options page and injected into matching pages at `document_idle`.
+
+[source,javascript]
+----
+// @name    My Script
+// @match   https://example.com/*
+console.log('Hello from QuteSurf userscript');
+----
+
+[source]
+----
+:userscript-list              ← print all installed script names to the console
+:userscript-remove My Script  ← remove by name
+:userscript-add               ← prints guidance to open the options page
+----
+
+[WARNING]
+Userscripts run in the *page world* with page-level privileges, not extension privileges.
+They cannot access `chrome.*` APIs.
+Install only scripts you trust, as they execute on every matching page.
+
+---
+
+== Embedded Vim editor and Neovim
+
+=== Embedded ACE editor (`edit-with-vim`)
+
+`edit-with-vim` opens any focused `<input>`, `<textarea>`, or `contenteditable` element in a full ACE editor with Vim keybindings, rendered inside the Shadow-DOM overlay.
+No configuration required.
+The ACE bundle (~571 KiB) loads lazily on first use.
+
+Available in both Insert and Normal modes.
+Default binding: `<C-i>` in insert mode (set per profile).
+
+=== Real Neovim (`edit-with-nvim`)
+
+`edit-with-nvim` connects to a locally-installed native-messaging host (`com.qutesurf.nvim`) to open the field in a real Neovim instance.
+If the host is not installed, it falls back to the embedded ACE editor automatically.
+
+[IMPORTANT]
+The current host implementation in `native-host/host.js` is an *echo stub* — it sends text back unchanged.
+Real Neovim editing requires wiring `nvim --embed` via msgpack-rpc; see the `NEOVIM INTEGRATION POINT` comment in `host.js` for the integration guide.
+
+==== Installing the native host
+
+See `native-host/README.md` for full platform-specific instructions.
+Summary:
+
+. Edit `native-host/com.qutesurf.nvim.json` — set `path` to the absolute path of `host.js` (or a `.bat` wrapper on Windows) and `<EXTENSION_ID>` to your extension ID.
+. Register the manifest:
+** *Windows (Chrome):* add a registry key at `HKCU\Software\Google\Chrome\NativeMessagingHosts\com.qutesurf.nvim` pointing to the JSON file.
+** *macOS (Chrome):* copy to `~/Library/Application Support/Google/Chrome/NativeMessagingHosts/`.
+** *Linux (Chrome):* copy to `~/.config/google-chrome/NativeMessagingHosts/`.
+** *Firefox (all platforms):* use the `HKCU\Software\Mozilla\NativeMessagingHosts\` registry path (Windows) or `~/.mozilla/native-messaging-hosts/` (Linux/macOS).
+. Reload the extension (or restart the browser).
+
+[NOTE]
+Node.js ≥ 18 must be in the PATH accessible to the browser process.
+On macOS/Linux, if Node is installed via a version manager, you may need to use the absolute path (e.g., `/usr/local/bin/node`) in your `.bat` / wrapper script.
+
+---
+
+== Help
+
+Press `?` in Normal mode, or run `:help`, to open the searchable cheatsheet.
+
+The cheatsheet is generated from the command registry and the active profile's keybindings, grouped by category.
+Commands with no current binding are listed separately so you can discover unbound actions.
+
+---
+
+== Architecture
+
+[source]
+----
+┌─ UI Overlays (Modern Glass, Shadow-DOM isolated) ─────────────┐
+│  command palette/omnibar · hint labels · statusline ·          │
+│  find bar · which-key cascade · visual feedback                │
+├─ Content Scripts ─────────────────────────────────────────────┤
+│  hints · scroll · visual/caret · find · marks · yank ·         │
+│  embedded Vim editor · DOM glue                                 │
+├─ Mode Manager (mode stack)                                     │
+├─ Keymap + Profile layer  (qute | surfingkeys | hybrid)        │
+├─ Command Registry  (single source of truth: named commands)   │
+├─ Background Service Worker ────────────────────────────────────┤
+│  tabs/windows · history+bookmark queries · sessions ·          │
+│  proxy/PAC · downloads · native-messaging (nvim) ·             │
+│  settings store                                                 │
+└─ Config system (unified store; :set/:bind + JS API + options) ─┘
+----
+
+=== Command Registry (`src/core/registry.js`)
+
+The spine of the extension.
+Every action is a `CommandRegistry` entry with a canonical `name`, optional `aliases`, `description`, `args`, `context` (`background` | `content`), `modes`, and a `handler`.
+Profiles, key handlers, the omnibar command source, and `:help` all reference this registry.
+
+=== Profile / keymap layer (`src/profiles/`, `src/core/keymap.js`, `src/core/trie.js`)
+
+A profile is a plain `{ name, bindings: { mode: { keySeq: "command" } } }` data object.
+Three built-in profiles are registered in `src/profiles/index.js`, which also exports the `CANONICAL_COMMANDS` closed vocabulary that profile bindings are validated against.
+
+Key-sequence resolution is trie-based with:
+
+* Configurable timeout for ambiguous prefixes (triggers the which-key cascade)
+* Numeric count prefix support (e.g. `3j` scrolls 3 steps)
+* Per-mode key maps; user overrides from config merge on top
+
+=== Mode Manager (`src/core/modes.js`)
+
+A `ModeStack` array with a non-poppable base Normal mode.
+`enter(mode)` pushes; `leave()` / `<Escape>` pops.
+Subscribers receive `(newMode, prevMode)` notifications; the statusline and key handler both subscribe.
+
+=== Content scripts (`src/content_scripts/`)
+
+Ported and restyled from SurfingKeys: hints engine, scroll helpers, visual/caret mode, find, marks, yank/clipboard, embedded ACE editor.
+All Glass UI is rendered into a closed Shadow-DOM host element injected into the page, isolating QuteSurf styles from the page's own CSS.
+
+=== Background service worker (`src/background/index.js`)
+
+MV3 event-driven worker.
+A `makeRouter` dispatches incoming `{type:'command', name, args}` messages from content scripts to their background-context handlers.
+The router enforces `cmd.context === 'background'` — content-context commands are rejected at this boundary.
+All long-lived state is in `chrome.storage`; the worker reconnects on wake.
+
+=== Unified config (`src/core/config.js`, `src/pages/options.js`, `src/pages/sandbox.js`)
+
+`chrome.storage.local` key `qutesurf:config` holds `{ options, userBindings, activeProfile }`.
+The `Config` class provides `load()`, `get(key)`, `set(key, value)`, `bind(mode, seq, cmd)`, `unbind(mode, seq)`, `setProfile(name)`.
+The options page's JS editor runs in `src/pages/sandbox.js` (opaque-origin iframe) and communicates structured mutations via `postMessage`.
+
+For full design rationale see `docs/superpowers/specs/2026-06-14-qutesurf-extension-design.md` and `docs/superpowers/plans/2026-06-14-qutesurf-extension.md`.
+
+---
+
+== Security
+
+QuteSurf underwent a full security audit (`docs/SECURITY-AUDIT.md`).
+All High and Critical findings are resolved.
+As of the audit: 37 test suites / 121 tests pass, including 12 security-specific regression tests.
+
+=== Security posture summary
+
+|===
+| Area | Posture
+
+| User JS evaluation
+| Runs in a dedicated `src/pages/sandbox.html` — opaque/null origin, no `chrome.*` access, `'unsafe-eval'` scoped only to the sandbox CSP directive. Privileged pages have strict `script-src 'self'`.
+
+| Content-Security-Policy
+| `extension_pages`: `script-src 'self'; object-src 'self'; base-uri 'none'`. Chrome additionally has a `sandbox` directive. No inline scripts; no remote scripts.
+
+| Trust-boundary enforcement
+| Background router (`makeRouter`) rejects any command whose `context !== 'background'`; content-only commands cannot be invoked through the router.
+
+| Dangerous-scheme navigation
+| Central `isSafeNavUrl()` allowlist (`http/https/ftp/mailto/about`) enforced at every navigation sink: omnibar open, paste-and-go, hints newtab/download, background `tab-new`, background `download-url`.
+
+| `web_accessible_resources`
+| Narrowed to `pages/help.html`, `pages/help.css`, `pages/help.js`, `chunks/*`. `use_dynamic_url: true` on Chrome rotates URLs per session. Options/popup/sandbox pages are not web-accessible.
+
+| DOM rendering of untrusted strings
+| Statusline, which-key, hints, find-marks use `textContent` / `createTextNode` exclusively. Omnibar `innerHTML` sink HTML-escapes every text slice before concatenation. Verified by regression tests (`tests/content/omnibar-xss.test.js`).
+
+| Native messaging host
+| No `exec` / `shell:true`. Frame-size cap of 64 MiB. Structural validation (type must be a string) before handling. Error-resilient: bad frames are refused and the buffer reset.
+
+| Userscripts
+| Run in the page world (page privileges, not extension privileges). Source is extension-local config only; pages cannot trigger injection.
+|===
+
+=== Permissions
+
+|===
+| Permission | Justification
+
+| `tabs`
+| Tab commands (`tab-new`, `tab-close`, `tab-next`, …) and the omnibar tabs source.
+
+| `bookmarks`
+| `bookmark-search` for the omnibar bookmarks source (read-only).
+
+| `history`
+| `history-search` for the omnibar history source (read-only).
+
+| `storage`
+| Persist config, profile, user bindings, userscripts, sessions, and proxy state in `chrome.storage.local`.
+
+| `clipboardWrite`
+| Yank commands copy URL / title / Markdown link / selection.
+
+| `clipboardRead`
+| `paste-and-go` and `paste-and-go-newtab` read the clipboard. Pasted content is scheme-filtered before navigation.
+
+| `downloads`
+| `hint-download` and `download-url`; URLs are scheme-checked before passing to the downloads API.
+
+| `sessions`
+| `tab-undo` (reopen closed tab) and session save/load/list.
+
+| `proxy`
+| `proxy-set` / `proxy-clear` / `proxy-toggle-host` generate and apply a PAC script.
+
+| `nativeMessaging`
+| Optional Neovim editing host (`connectNative('com.qutesurf.nvim')`); graceful ACE fallback when absent.
+
+| `host_permissions: <all_urls>`
+| The extension operates on every page; the content script must match all URLs. Cannot be scoped without removing core functionality.
+|===
+
+Removed (unused): `scripting`, `topSites` (see QS-06 in `docs/SECURITY-AUDIT.md`).
+
+---
+
+== Development
+
+=== npm scripts
+
+|===
+| Script | Description
+
+| `npm run build` | Clean + build both Chrome and Firefox targets to `dist/`
+| `npm run build:chrome` | Build Chrome target only (`dist/chrome/`)
+| `npm run build:firefox` | Build Firefox target only (`dist/firefox/`)
+| `npm run dev:chrome` | Webpack watch mode for Chrome (rebuilds on file changes)
+| `npm run test` | Run all Jest unit tests
+| `npm run test:e2e` | Run Puppeteer e2e tests (`tests/e2e/`)
+| `npm run package` | Build + zip both targets → `qutesurf-chrome.zip`, `qutesurf-firefox.zip`
+| `npm run clean` | Remove the `dist/` directory
+|===
+
+=== Test stack
+
+* *Jest* with `jsdom` environment — unit tests for command registry, keymap trie, command-line parser, config store, search-engine aliases, profile data, url-safety, omnibar XSS, native-messaging framing.
+* *Puppeteer* — e2e integration tests (`tests/e2e/`) for hints flow, omnibar fuzzy search, and mode transitions.
+* *jest-image-snapshot* — visual regression snapshots for the e2e suite.
+
+E2e tests auto-skip when no browser binary is available (CI without a browser).
+
+=== Repository layout
+
+[source]
+----
+config/
+  manifest.chrome.json      MV3 Chrome manifest
+  manifest.firefox.json     MV3 Firefox manifest
+  webpack.config.js         Multi-target webpack config
+
+src/
+  core/                     Command registry, keymap trie, mode stack, config,
+                            search engines, JS settings API, url-safety
+  profiles/                 qute.js, surfingkeys.js, hybrid.js, index.js
+  commands/                 Per-category command registrations
+  background/               MV3 service worker, tabs, history, bookmarks,
+                            sessions, proxy, downloads
+  content_scripts/          Key handler, dispatcher, hints, scroll, visual,
+                            find, clipboard, userscripts, editor, Shadow-DOM host
+  pages/                    options, popup, help, sandbox pages
+  nvim/                     msgpack framing for native-messaging transport
+
+native-host/
+  host.js                   Native-messaging host (echo stub; see NEOVIM INTEGRATION POINT)
+  com.qutesurf.nvim.json    Manifest template (fill in path + extension ID)
+  README.md                 Platform-specific installation instructions
+
+tests/
+  core/                     Unit tests for registry, keymap, config, etc.
+  content/                  Unit tests for hints, clipboard, omnibar-xss, etc.
+  background/               Unit tests for router, tabs, sessions, proxy
+  profiles/                 Profile validation tests
+  nvim/                     Framing tests
+  e2e/                      Puppeteer integration tests
+
+docs/
+  SECURITY-AUDIT.md         Full security audit and finding resolutions
+  superpowers/specs/        Design spec
+  superpowers/plans/        Implementation plan
+----
+
+=== Running tests
+
+[source,shell]
+----
+npm test                           # all unit tests
+npm test -- tests/core/            # one directory
+npm test -- tests/core/config.test.js  # one file
+npm run test:e2e                   # Puppeteer (needs dist/ built first)
+----
+
+---
+
+== Browser support and limitations
+
+|===
+| Target | Status
+
+| Chrome / Chromium (MV3) | Primary target
+| Firefox (MV3, ≥ 121.0) | Supported; `browser_specific_settings.gecko.id = qutesurf@local`
+|===
+
+=== Known limitations
+
+* The extension cannot own the browser chrome, replace the native URL bar, or render tabs natively — these are outside the WebExtension API surface.
+* `reload-hard` (cache bypass) relies on `location.reload()` because `location.reload(true)` is deprecated in modern browsers; true hard-reload is not accessible to extensions.
+* The Neovim integration is currently an echo stub.
+Real editing requires wiring `nvim --embed` via msgpack-rpc and installing the native host.
+See `native-host/host.js` (`NEOVIM INTEGRATION POINT` comment) and `native-host/README.md`.
+* Puppeteer e2e tests automatically skip when no browser binary is available.
+* ACE editor loads as a ~571 KiB lazy bundle chunk on the first `edit-with-vim` invocation.
+* The `home` command navigates to the origin root rather than a configurable homepage (no homepage config yet).
+
+---
+
+== License
+
+MIT — see `package.json`.
