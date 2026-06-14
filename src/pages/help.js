@@ -168,16 +168,25 @@
 
   var STORAGE_KEY = 'qutesurf:config';
 
+  // The real profile keymaps live in the (bundled) background, not in storage.
+  // Ask the background for the active profile's resolved bindings + user overrides.
   function loadData(callback) {
     if (
       typeof chrome !== 'undefined' &&
-      chrome.storage &&
-      chrome.storage.local
+      chrome.runtime &&
+      chrome.runtime.sendMessage
     ) {
-      chrome.storage.local.get(STORAGE_KEY, function (result) {
-        var stored = result[STORAGE_KEY];
-        callback(stored || {});
-      });
+      try {
+        chrome.runtime.sendMessage({ type: 'command', name: 'keymap-get', args: [] }, function (resp) {
+          if (chrome.runtime.lastError || !resp || !resp.ok || !resp.result) {
+            callback({});
+            return;
+          }
+          callback(resp.result); // { activeProfile, profileBindings, userBindings }
+        });
+      } catch (_) {
+        callback({});
+      }
     } else {
       callback({});
     }
@@ -349,17 +358,11 @@
   document.addEventListener('DOMContentLoaded', function () {
     var searchEl = document.getElementById('search');
 
-    loadData(function (stored) {
-      var activeProfile = stored.activeProfile || 'hybrid';
-      // We can't require() profiles here; use stored user bindings only,
-      // overlaid with whatever profile bindings are in storage (if any).
-      // The real profile bindings are baked into CANONICAL_COMMANDS for display;
-      // user bindings from storage are applied on top.
-      var profileBindings = stored.profileBindings || {};
-      var userBindings    = stored.userBindings    || { normal: {}, insert: {}, visual: {} };
+    loadData(function (data) {
+      var activeProfile   = data.activeProfile   || 'hybrid';
+      var profileBindings = data.profileBindings || {};
+      var userBindings    = data.userBindings    || { normal: {}, insert: {}, visual: {} };
 
-      // Try to load actual profile bindings from chrome storage or fall back to
-      // an empty set — the canonical list already gives us all command names.
       var sheet = buildCheatsheet(profileBindings, userBindings);
 
       renderSheet(sheet, '');

@@ -6,6 +6,7 @@ const { registerBookmarkCommands } = require('./bookmarks');
 const { registerDownloadCommands } = require('./downloads');
 const { registerSessionCommands } = require('./sessions');
 const { registerProxyCommands } = require('./proxy');
+const { registerKeymapCommands } = require('./keymap');
 const { registerZoomCommands } = require('./zoom');
 const { registerCaptureCommands } = require('./capture');
 
@@ -56,6 +57,7 @@ function buildBackgroundRegistry() {
   registerProxyCommands(registry);
   registerZoomCommands(registry);
   registerCaptureCommands(registry);
+  registerKeymapCommands(registry);
   return registry;
 }
 
