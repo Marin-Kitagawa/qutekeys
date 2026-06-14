@@ -1,7 +1,7 @@
 'use strict';
 
 const OMNIBAR_CSS = `
-/* ── QuteSurf Omnibar — Modern Glass ─────────────────────────── */
+/* ── QuteSurf Omnibar — Themeable Glass ─────────────────────────── */
 #qs-omnibar-overlay {
   position: fixed;
   inset: 0;
@@ -20,19 +20,16 @@ const OMNIBAR_CSS = `
   max-height: 480px;
   display: flex;
   flex-direction: column;
-  background: rgba(28, 33, 48, 0.82);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: 14px;
-  box-shadow:
-    0 24px 80px rgba(0, 0, 0, 0.6),
-    0 8px 24px rgba(0, 0, 0, 0.4),
-    0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+  background: var(--qs-panel-bg, rgba(28, 33, 48, 0.82));
+  backdrop-filter: var(--qs-blur, blur(20px));
+  -webkit-backdrop-filter: var(--qs-blur, blur(20px));
+  border: 1px solid var(--qs-panel-border, rgba(255, 255, 255, 0.09));
+  border-radius: var(--qs-radius, 14px);
+  box-shadow: var(--qs-panel-shadow, 0 24px 80px rgba(0,0,0,.6), 0 8px 24px rgba(0,0,0,.4), inset 0 0 0 1px rgba(255,255,255,.04));
   overflow: hidden;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--qs-prose, system-ui, -apple-system, 'Segoe UI', sans-serif);
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--qs-text, rgba(255, 255, 255, 0.9));
 }
 
 /* ── Input row ─────────────────────────────────────────────────── */
@@ -41,16 +38,16 @@ const OMNIBAR_CSS = `
   align-items: center;
   gap: 10px;
   padding: 14px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  border-bottom: 1px solid var(--qs-divider, rgba(255, 255, 255, 0.07));
 }
 
 #qs-omnibar-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #8b5cf6;
+  background: var(--qs-accent, #7c5cff);
   flex-shrink: 0;
-  box-shadow: 0 0 6px #8b5cf6;
+  box-shadow: 0 0 6px var(--qs-accent, #7c5cff);
 }
 
 #qs-omnibar-input {
@@ -58,14 +55,14 @@ const OMNIBAR_CSS = `
   background: transparent;
   border: none;
   outline: none;
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--qs-text, rgba(255, 255, 255, 0.95));
   font-size: 15px;
   font-family: inherit;
-  caret-color: #8b5cf6;
+  caret-color: var(--qs-accent, #7c5cff);
 }
 
 #qs-omnibar-input::placeholder {
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--qs-text-muted, rgba(255, 255, 255, 0.3));
 }
 
 /* ── Results list ──────────────────────────────────────────────── */
@@ -73,15 +70,16 @@ const OMNIBAR_CSS = `
   overflow-y: auto;
   flex: 1;
   scrollbar-width: thin;
-  scrollbar-color: rgba(139, 92, 246, 0.4) transparent;
+  scrollbar-color: var(--qs-accent, rgba(139, 92, 246, 0.4)) transparent;
 }
 
 #qs-omnibar-results::-webkit-scrollbar {
   width: 4px;
 }
 #qs-omnibar-results::-webkit-scrollbar-thumb {
-  background: rgba(139, 92, 246, 0.4);
+  background: var(--qs-accent, rgba(139, 92, 246, 0.4));
   border-radius: 2px;
+  opacity: 0.4;
 }
 
 /* ── Result row ────────────────────────────────────────────────── */
@@ -96,14 +94,12 @@ const OMNIBAR_CSS = `
 }
 
 .qs-omni-row:hover {
-  background: rgba(139, 92, 246, 0.12);
+  background: var(--qs-row-sel-bg, rgba(139, 92, 246, 0.12));
 }
 
 .qs-omni-row.selected {
-  background: linear-gradient(90deg,
-    rgba(139, 92, 246, 0.22) 0%,
-    rgba(139, 92, 246, 0.08) 100%);
-  border-left: 2px solid #8b5cf6;
+  background: var(--qs-row-sel-bg, linear-gradient(90deg, rgba(139,92,246,.22) 0%, rgba(139,92,246,.08) 100%));
+  border-left: 2px solid var(--qs-accent, #7c5cff);
   padding-left: 14px;
 }
 
@@ -121,7 +117,7 @@ const OMNIBAR_CSS = `
   width: 16px;
   height: 16px;
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--qs-divider, rgba(255, 255, 255, 0.1));
   flex-shrink: 0;
 }
 
@@ -136,7 +132,7 @@ const OMNIBAR_CSS = `
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--qs-text, rgba(255, 255, 255, 0.9));
   font-size: 13px;
   line-height: 1.4;
 }
@@ -145,15 +141,16 @@ const OMNIBAR_CSS = `
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--qs-text-muted, rgba(255, 255, 255, 0.4));
   font-size: 11px;
   line-height: 1.4;
   margin-top: 1px;
+  font-family: var(--qs-prose, inherit);
 }
 
 /* ── Fuzzy highlight ───────────────────────────────────────────── */
 .qs-omni-hl {
-  color: #a78bfa;
+  color: var(--qs-name, #a78bfa);
   font-weight: 600;
 }
 
@@ -165,25 +162,26 @@ const OMNIBAR_CSS = `
   letter-spacing: 0.06em;
   padding: 2px 6px;
   border-radius: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.45);
-  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--qs-divider, rgba(255, 255, 255, 0.12));
+  color: var(--qs-text-muted, rgba(255, 255, 255, 0.45));
+  background: var(--qs-divider, rgba(255, 255, 255, 0.06));
   text-transform: uppercase;
+  font-family: var(--qs-mono, 'Fira Code', monospace);
 }
 
 .qs-omni-badge.badge-bookmark { border-color: rgba(251, 191, 36, 0.4); color: #fbbf24; background: rgba(251, 191, 36, 0.08); }
 .qs-omni-badge.badge-history  { border-color: rgba(99, 179, 237, 0.4); color: #63b3ed; background: rgba(99, 179, 237, 0.08); }
 .qs-omni-badge.badge-tab      { border-color: rgba(52, 211, 153, 0.4); color: #34d399; background: rgba(52, 211, 153, 0.08); }
 .qs-omni-badge.badge-cmd      { border-color: rgba(248, 113, 113, 0.4); color: #f87171; background: rgba(248, 113, 113, 0.08); }
-.qs-omni-badge.badge-search   { border-color: rgba(139, 92, 246, 0.4); color: #a78bfa; background: rgba(139, 92, 246, 0.08); }
-.qs-omni-badge.badge-url      { border-color: rgba(139, 92, 246, 0.4); color: #a78bfa; background: rgba(139, 92, 246, 0.08); }
+.qs-omni-badge.badge-search   { border-color: var(--qs-accent, rgba(139, 92, 246, 0.4)); color: var(--qs-name, #a78bfa); background: var(--qs-hint-bg, rgba(139, 92, 246, 0.08)); }
+.qs-omni-badge.badge-url      { border-color: var(--qs-accent, rgba(139, 92, 246, 0.4)); color: var(--qs-name, #a78bfa); background: var(--qs-hint-bg, rgba(139, 92, 246, 0.08)); }
 .qs-omni-badge.badge-mark     { border-color: rgba(251, 146, 60, 0.4); color: #fb923c; background: rgba(251, 146, 60, 0.08); }
 
 /* ── Empty state ───────────────────────────────────────────────── */
 #qs-omnibar-empty {
   padding: 24px 16px;
   text-align: center;
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--qs-text-muted, rgba(255, 255, 255, 0.3));
   font-size: 13px;
 }
 `;

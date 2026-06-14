@@ -1,9 +1,9 @@
 'use strict';
 
 /**
- * Modern Glass label styles for hint overlays.
- * Violet gradient (#7c5cff → #a855f7), white text, rounded corners,
- * soft glow, high z-index. Exported as a string for addStyle() injection.
+ * Themeable Glass label styles for hint overlays.
+ * Uses --qs-* custom properties with violet fallbacks.
+ * IMPORTANT: .qs-hint-layer positioning MUST remain absolute + document-anchored.
  */
 const HINTS_CSS = `
 .qs-hint {
@@ -14,16 +14,15 @@ const HINTS_CSS = `
   padding: 1px 5px;
   min-width: 16px;
   height: 18px;
-  font-family: 'FiraCode Nerd Font', 'FiraCode Nerd Font Mono', 'FiraCode Nerd Font Propo', 'Fira Code', monospace;
+  font-family: var(--qs-mono, 'FiraCode Nerd Font', 'FiraCode Nerd Font Mono', 'Fira Code', monospace);
   font-size: 11px;
   font-weight: 700;
   line-height: 1;
-  color: #fff;
-  background: linear-gradient(135deg, #7c5cff 0%, #a855f7 100%);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: var(--qs-hint-fg, #fff);
+  background: var(--qs-hint-bg, rgba(124, 92, 255, 0.9));
+  border: 1px solid var(--qs-hint-border, rgba(255, 255, 255, 0.25));
   border-radius: 6px;
-  box-shadow: 0 3px 10px rgba(124, 92, 255, 0.55),
-              0 1px 3px rgba(0, 0, 0, 0.35),
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35),
               inset 0 1px 0 rgba(255, 255, 255, 0.2);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
   letter-spacing: 0.5px;

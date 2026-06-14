@@ -33,3 +33,8 @@ test('get returns default for unset option', async () => {
   const c = new Config(fake); await c.load();
   expect(c.get('hintcharacters')).toBe('asdfg'); // default
 });
+test('config.get("theme") returns aurora by default', () => {
+  const storage = { get: async () => ({}), set: async () => {} };
+  const c = new Config(storage);
+  expect(c.get('theme')).toBe('aurora');
+});

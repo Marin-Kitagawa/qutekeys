@@ -39,6 +39,25 @@ class ShadowHost {
   }
 
   /**
+   * Inject or replace a named CSS block identified by `marker`.
+   * Only one <style data-qs-marker="marker"> exists at a time.
+   * @param {string} marker  Unique identifier (e.g. 'theme')
+   * @param {string} cssText
+   */
+  replaceStyle(marker, cssText) {
+    if (!this.root) return;
+    const existing = this.root.querySelector(`style[data-qs-marker="${marker}"]`);
+    if (existing) {
+      existing.textContent = cssText;
+      return;
+    }
+    const style = document.createElement('style');
+    style.setAttribute('data-qs-marker', marker);
+    style.textContent = cssText;
+    this.root.appendChild(style);
+  }
+
+  /**
    * Append an element into the shadow root.
    * @param {Element} el
    */

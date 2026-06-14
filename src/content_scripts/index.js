@@ -38,6 +38,7 @@ const { PassThrough }        = require('./passthrough');
 const { Macros }             = require('./macros');
 const { Blocklist }          = require('../core/blocklist');
 const { ScrollTarget }       = require('./scroll-target');
+const { themeVarsCss }       = require('./ui/themes');
 
 /**
  * Bootstrap the content-script.  Safe to call multiple times (subsequent calls
@@ -85,6 +86,30 @@ async function init() {
 
   // ── Shadow DOM host ───────────────────────────────────────────────────────
   const host = new ShadowHost();
+
+  // ── Theme vars — inject BEFORE component styles so vars are available ──────
+  function applyTheme(key) {
+    host.replaceStyle('theme', themeVarsCss(key));
+  }
+  applyTheme(config ? config.get('theme') : 'aurora');
+
+  // ── Live theme switch via storage.onChanged ────────────────────────────────
+  if (
+    typeof chrome !== 'undefined' &&
+    chrome.storage &&
+    chrome.storage.onChanged
+  ) {
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area !== 'local') return;
+      const configChange = changes['qutesurf:config'];
+      if (!configChange || !configChange.newValue) return;
+      const newTheme = configChange.newValue.options && configChange.newValue.options.theme;
+      if (newTheme) {
+        applyTheme(newTheme);
+        if (config) config._state.options.theme = newTheme;
+      }
+    });
+  }
 
   // ── Statusline + WhichKey UI ──────────────────────────────────────────────
   const statusline = new Statusline({ host, modes });

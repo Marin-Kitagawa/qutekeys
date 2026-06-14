@@ -72,6 +72,67 @@
     saveState({ activeProfile: profileSelect.value });
   });
 
+  // ── Theme picker ──────────────────────────────────────────────────────────
+
+  // Inline theme data — mirrors themes.js (options.js is not webpack-bundled)
+  const THEME_SWATCHES = [
+    { key: 'aurora',   label: 'Aurora',         panelBg: 'rgba(20,32,40,.85)',    accent: '#5ee7c2', fg: '#06241c' },
+    { key: 'obsidian', label: 'Obsidian',        panelBg: 'rgba(14,14,16,.92)',    accent: '#ff5a3c', fg: '#ffffff' },
+    { key: 'amber',    label: 'Amber',           panelBg: 'rgba(46,30,16,.85)',    accent: '#e0a04a', fg: '#2a1808' },
+    { key: 'frost',    label: 'Frost',           panelBg: 'rgba(220,228,248,.85)', accent: '#4150c0', fg: '#ffffff' },
+    { key: 'classic',  label: 'Classic Violet',  panelBg: 'rgba(28,33,48,.92)',    accent: '#7c5cff', fg: '#ffffff' },
+  ];
+
+  const swatchesEl = document.getElementById('theme-swatches');
+  const themeMsg   = document.getElementById('theme-msg');
+
+  function renderThemeSwatches(activeKey) {
+    swatchesEl.innerHTML = '';
+    THEME_SWATCHES.forEach(({ key, label, panelBg, accent, fg }) => {
+      const card = document.createElement('div');
+      card.className = 'theme-swatch' + (key === activeKey ? ' active' : '');
+      card.title = label;
+
+      const chip = document.createElement('div');
+      chip.className = 'theme-swatch__chip';
+      chip.style.background = panelBg;
+
+      const dot = document.createElement('div');
+      dot.className = 'theme-swatch__dot';
+      dot.style.background = accent;
+      chip.appendChild(dot);
+
+      const lbl = document.createElement('div');
+      lbl.className = 'theme-swatch__label';
+      lbl.textContent = label;
+
+      card.appendChild(chip);
+      card.appendChild(lbl);
+
+      card.addEventListener('click', () => {
+        // Read-modify-write so we don't clobber other settings
+        loadState().then(state => {
+          const options = Object.assign({}, state.options || {}, { theme: key });
+          const next = Object.assign({}, state, { options });
+          return chrome.storage.local.set({ [STORAGE_KEY]: next });
+        }).then(() => {
+          renderThemeSwatches(key);
+          showMsg(themeMsg, 'Theme saved. Open tabs update live.', 'ok');
+        }).catch(err => {
+          showMsg(themeMsg, 'Error: ' + err.message, 'err');
+        });
+      });
+
+      swatchesEl.appendChild(card);
+    });
+  }
+
+  // Load the current active theme and render
+  loadState().then(state => {
+    const currentTheme = (state.options && state.options.theme) || 'aurora';
+    renderThemeSwatches(currentTheme);
+  });
+
   // ── Options table ─────────────────────────────────────────────────────────
 
   const tbody = document.getElementById('options-tbody');

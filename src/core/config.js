@@ -8,6 +8,7 @@ const DEFAULTS = {
   smoothscroll: true,
   findcasesensitive: false,
   defaultsearchengine: 'g',
+  theme: 'aurora',
 };
 
 const EMPTY_STATE = () => ({
