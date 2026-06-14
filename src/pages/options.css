@@ -1013,3 +1013,6 @@ input[type="number"].opt-input {
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   }
 }
+
+/* Logo alignment in the wordmark row */
+.page-header__wordmark { display: flex; align-items: center; gap: 12px; }
