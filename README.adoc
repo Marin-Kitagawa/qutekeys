@@ -1241,25 +1241,19 @@ docs/
 
 === Release automation
 
-Two GitHub Actions workflows publish releases (`.github/workflows/`):
+Two GitHub Actions workflows build release zips (`.github/workflows/`):
 
-| Workflow | Store upload | Release artifact |
+| Workflow | Build | Artifact |
 |---|---|---|
-| `publish-chrome.yml` | Chrome Web Store via `chrome-webstore-upload-cli` (`--auto-publish`) | `qutesurf-chrome-v*.zip` |
-| `publish-firefox.yml` | AMO signing via `web-ext sign --channel unlisted` | signed `.xpi` + `qutesurf-firefox-v*.zip` |
+| `release-chrome.yml` | `dist/chrome` | `qutesurf-chrome-v*.zip` |
+| `release-firefox.yml` | `dist/firefox` | `qutesurf-firefox-v*.zip` |
 
-Both trigger on `v*` tags and `workflow_dispatch`, sync the manifest version from
-the tag, lint the build, and attach artifacts to a GitHub release. Store uploads
-are skipped automatically when their secrets are not configured.
-
-Required secrets (Settings → Secrets and variables → Actions):
-
-- Chrome: `CHROME_EXTENSION_ID`, `CHROME_CLIENT_ID`, `CHROME_CLIENT_SECRET`,
-  `CHROME_REFRESH_TOKEN` (see the
-  https://github.com/chrome-webstore-upload/chrome-webstore-upload/blob/main/How%20to%20generate%20Google%20OAuth2%20token.md[CWS
-  OAuth guide]).
-- Firefox: `MOZILLA_API_KEY`, `MOZILLA_API_SECRET`
-  (https://addons.mozilla.org/developers/addon/api/key/[AMO API keys]).
+Both trigger on `v*` tags and manual `workflow_dispatch`, sync the manifest
+version from the tag, validate the manifest, and attach the zips to a GitHub
+release (tagged runs) or upload them as workflow artifacts (manual runs).
+No store publishing — users load the unpacked extension from the zip:
+Chrome via `chrome://extensions` (Developer mode → Load unpacked), Firefox via
+`about:debugging` (Load Temporary Add-on).
 
 === Running tests
 
