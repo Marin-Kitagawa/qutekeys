@@ -107,6 +107,10 @@ function Visual({ host: _host, modes }) {
   // Track the current sub-mode so move() knows which Selection alter to use.
   let _subMode = null; // 'caret' | 'visual' | null
 
+  // Optional callback for opening a URL in a new background tab (set via
+  // setMessaging — used by selection-follow -t).
+  let _onOpenInNewTab = null;
+
   // Keydown listener installed while in caret/visual mode.
   let _keyListener = null;
 
@@ -121,6 +125,10 @@ function Visual({ host: _host, modes }) {
 
   // pendingZ: true when 'z' has been pressed and we're awaiting a second key
   let _pendingZ = false;
+
+  // Last non-collapsed selection range, persisted when visual mode stops so
+  // `visual-restore` (SK V) can bring it back.
+  let _lastRange = null;
 
   /**
    * Retrieve the live Selection object, or null if unavailable (e.g. jsdom).
@@ -624,10 +632,31 @@ function Visual({ host: _host, modes }) {
   }
 
   /**
-   * Restore the last visual selection — a no-op stub (selection state is not
-   * persisted between mode exits in this implementation). Enters caret mode.
+   * Restore the last visual selection (SK V). Re-enters visual mode with the
+   * previously selected range when one was persisted; otherwise falls back to
+   * entering caret mode.
    */
   function restoreVisual() {
+    if (_lastRange) {
+      const sel = _getSelection();
+      if (sel) {
+        try {
+          sel.removeAllRanges();
+          sel.addRange(_lastRange);
+          _subMode = 'visual';
+          modes.enter('visual');
+          _removeKeyListener();
+          _pendingSeek = null;
+          _pendingG = false;
+          _pendingZ = false;
+          _installKeyListener();
+          return;
+        } catch (_) {
+          // Range detached (DOM changed) — fall through to caret mode
+          _lastRange = null;
+        }
+      }
+    }
     enterCaret();
   }
 
@@ -657,6 +686,55 @@ function Visual({ host: _host, modes }) {
   }
 
   /**
+   * Drop the current selection but stay in caret/visual mode (qutebrowser
+   * :selection-drop).
+   */
+  function dropSelection() {
+    const sel = _getSelection();
+    if (sel && sel.rangeCount > 0) {
+      try {
+        sel.collapseToStart();
+      } catch (_) {
+        // ignore
+      }
+    }
+  }
+
+  /**
+   * Follow the selected link (qutebrowser :selection-follow). Clicks the
+   * nearest anchor around/inside the selection. With flags.t the link is
+   * opened in a new background tab instead of being clicked.
+   */
+  function followSelection(flags) {
+    const sel = _getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+    let node = sel.anchorNode || sel.focusNode;
+    if (!node) return;
+    let el = node.nodeType === 1 ? node : node.parentElement;
+    const anchor = el ? el.closest('a[href]') : null;
+    if (anchor && flags && flags.t) {
+      const href = anchor.getAttribute('href');
+      if (href && _onOpenInNewTab) {
+        _onOpenInNewTab(anchor.href);
+        return;
+      }
+    }
+    if (anchor) {
+      try {
+        anchor.dispatchEvent(new MouseEvent('click', {
+          bubbles: true,
+          cancelable: true,
+          view: typeof window !== 'undefined' ? window : undefined,
+        }));
+        return;
+      } catch (_) {
+        // fall through to generic click
+      }
+    }
+    _clickFocusNode(false);
+  }
+
+  /**
    * Collapse the selection and leave whatever visual/caret mode is active.
    */
   function stop() {
@@ -666,9 +744,16 @@ function Visual({ host: _host, modes }) {
     _pendingG = false;
     _pendingZ = false;
 
-    // Collapse selection
+    // Persist a non-collapsed selection for visual-restore before collapsing
     const sel = _getSelection();
     if (sel && sel.rangeCount > 0) {
+      if (!sel.isCollapsed) {
+        try {
+          _lastRange = sel.getRangeAt(0).cloneRange();
+        } catch (_) {
+          _lastRange = null;
+        }
+      }
       sel.collapseToEnd();
     }
 
@@ -684,6 +769,10 @@ function Visual({ host: _host, modes }) {
     stop,
     selectElement,
     restoreVisual,
+    dropSelection,
+    reverseSelection: _swapAnchorFocus,
+    followSelection,
+    setMessaging: (fn) => { _onOpenInNewTab = fn; },
   };
 }
 

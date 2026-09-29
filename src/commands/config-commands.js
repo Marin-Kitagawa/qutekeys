@@ -20,14 +20,56 @@ function coerce(value) {
 function registerConfigCommands(registry, cfg) {
   registry.register({
     name: 'set',
-    description: 'Set a configuration option. Usage: set <key> <value>',
-    args: ['key', 'value'],
+    description: 'Set a configuration option. Usage: set <key> <value> (no value → true)',
+    args: ['key', 'value?'],
     context: 'content',
     modes: ['normal'],
     async handler(ctx, parsed) {
       const config = (ctx && ctx.cfg) || cfg;
       const [key, value] = parsed.args;
-      await config.set(key, coerce(value));
+      if (value === undefined) {
+        await config.set(key, true);
+      } else {
+        await config.set(key, coerce(value));
+      }
+    },
+  });
+
+  registry.register({
+    name: 'config-cycle',
+    description: 'Cycle an option through values. Usage: config-cycle <key> [v1 v2 …] (booleans toggle)',
+    args: ['key', 'values?'],
+    context: 'content',
+    modes: ['normal'],
+    async handler(ctx, parsed) {
+      const config = (ctx && ctx.cfg) || cfg;
+      const [key, ...values] = parsed.args;
+      await config.cycle(key, values.length ? values.map(coerce) : undefined);
+    },
+  });
+
+  registry.register({
+    name: 'config-unset',
+    description: 'Reset an option to its default. Usage: config-unset <key>',
+    args: ['key'],
+    context: 'content',
+    modes: ['normal'],
+    async handler(ctx, parsed) {
+      const config = (ctx && ctx.cfg) || cfg;
+      const [key] = parsed.args;
+      await config.unset(key);
+    },
+  });
+
+  registry.register({
+    name: 'config-clear',
+    description: 'Reset all options to their defaults (bindings are kept)',
+    args: [],
+    context: 'content',
+    modes: ['normal'],
+    async handler(ctx, _parsed) {
+      const config = (ctx && ctx.cfg) || cfg;
+      await config.clearOptions();
     },
   });
 

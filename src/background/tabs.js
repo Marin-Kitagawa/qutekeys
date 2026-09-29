@@ -119,6 +119,18 @@ function registerTabCommands(registry) {
   });
 
   registry.register({
+    name: 'tab-reload-hard',
+    description: 'Reload the current tab bypassing the cache',
+    args: [],
+    context: 'background',
+    modes: ['normal'],
+    handler: async (ctx, _parsed) => {
+      const id = ctx.sender && ctx.sender.tab && ctx.sender.tab.id;
+      return api().tabs.reload(id, { bypassCache: true });
+    },
+  });
+
+  registry.register({
     name: 'tab-mute',
     description: 'Toggle mute state of the current tab',
     args: [],

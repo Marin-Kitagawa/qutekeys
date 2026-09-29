@@ -47,10 +47,29 @@ function registerYankCommands(registry, ctx = {}) {
   // ── yank-url ──────────────────────────────────────────────────────────────
   registry.register({
     name: 'yank-url',
-    description: 'Copy the current page URL to the clipboard',
+    description: 'Copy the current page URL to the clipboard (with count: URLs of the next N tabs)',
     context: 'content',
     modes: ['normal'],
-    async handler() {
+    async handler(_ctx, parsed) {
+      const count = (parsed && parsed.count) || 1;
+      if (count > 1 && ctx.messaging && typeof ctx.messaging.sendMessage === 'function') {
+        // SurfingKeys yy with a count: copy URLs of the next N tabs.
+        const result = await ctx.messaging.sendMessage({ type: 'command', name: 'tab-list', args: [], flags: {}, count: null });
+        const tabs = Array.isArray(result)
+          ? result
+          : (result && Array.isArray(result.result) ? result.result : []);
+        const curIdx = tabs.findIndex(t => t.active || t.isCurrent);
+        const start = curIdx >= 0 ? curIdx : 0;
+        const picked = [];
+        for (let i = 0; i < count; i++) {
+          const t = tabs[(start + i) % tabs.length];
+          if (t && t.url) picked.push(t.url);
+        }
+        if (picked.length) {
+          await Clipboard.write(picked.join('\n'));
+          return;
+        }
+      }
       await Clipboard.write(formatYank('url', Clipboard.currentPage()));
     },
   });

@@ -9,6 +9,7 @@ const { registerProxyCommands } = require('./proxy');
 const { registerKeymapCommands } = require('./keymap');
 const { registerZoomCommands } = require('./zoom');
 const { registerCaptureCommands } = require('./capture');
+const { registerMiscCommands } = require('./misc');
 
 /**
  * Create a message router for background commands.
@@ -57,6 +58,7 @@ function buildBackgroundRegistry() {
   registerProxyCommands(registry);
   registerZoomCommands(registry);
   registerCaptureCommands(registry);
+  registerMiscCommands(registry);
   registerKeymapCommands(registry);
   return registry;
 }

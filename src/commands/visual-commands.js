@@ -88,6 +88,36 @@ function registerVisualCommands(registry, visual) {
   });
 
   registry.register({
+    name: 'selection-drop',
+    description: 'Drop the selection, staying in caret mode',
+    context: 'content',
+    modes: ['caret', 'visual'],
+    handler() {
+      visual.dropSelection();
+    },
+  });
+
+  registry.register({
+    name: 'selection-reverse',
+    description: 'Swap the two ends of the selection (vi o)',
+    context: 'content',
+    modes: ['caret', 'visual'],
+    handler() {
+      visual.reverseSelection();
+    },
+  });
+
+  registry.register({
+    name: 'selection-follow',
+    description: 'Follow the selected link (-t flag: open in new background tab)',
+    context: 'content',
+    modes: ['caret', 'visual'],
+    handler(ctx, parsed) {
+      visual.followSelection(parsed.flags || {});
+    },
+  });
+
+  registry.register({
     name: 'search-word',
     description: 'Search for the word under the cursor using window.find',
     context: 'content',

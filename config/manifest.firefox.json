@@ -33,9 +33,11 @@
     "clipboardWrite",
     "clipboardRead",
     "downloads",
+    "downloads.open",
     "sessions",
     "proxy",
-    "nativeMessaging"
+    "nativeMessaging",
+    "scripting"
   ],
   "host_permissions": ["<all_urls>"],
   "content_scripts": [

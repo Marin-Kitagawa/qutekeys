@@ -92,6 +92,39 @@ function registerSessionCommands(registry) {
         }));
     },
   });
+
+  registry.register({
+    name: 'session-save-and-close',
+    description: 'Save the window as session "last", then close the window (qutebrowser ZZ)',
+    args: [],
+    context: 'background',
+    modes: ['normal'],
+    handler: async (ctx, _parsed) => {
+      const windowId = ctx.sender && ctx.sender.tab && ctx.sender.tab.windowId;
+      const tabs = await api().tabs.query({ windowId });
+      const saved = tabs.map(t => ({ url: t.url, pinned: t.pinned }));
+      const sessions = await readSessions();
+      sessions['last'] = { tabs: saved, savedAt: Date.now() };
+      await writeSessions(sessions);
+      return api().windows.remove(windowId);
+    },
+  });
+
+  registry.register({
+    name: 'session-restore-last',
+    description: 'Restore the "last" saved session (qutebrowser ZR)',
+    args: [],
+    context: 'background',
+    modes: ['normal'],
+    handler: async (_ctx, _parsed) => {
+      const sessions = await readSessions();
+      const session = sessions['last'];
+      if (!session) throw new Error('no saved "last" session');
+      for (const tab of session.tabs) {
+        await api().tabs.create({ url: tab.url, pinned: tab.pinned });
+      }
+    },
+  });
 }
 
 module.exports = { registerSessionCommands };

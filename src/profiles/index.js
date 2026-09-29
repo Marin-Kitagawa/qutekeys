@@ -103,6 +103,20 @@ const CANONICAL_COMMANDS = [
   'omnibar-recently-closed', 'omnibar-close-tabs', 'omnibar-windows',
   'mark-jump-newtab',
   'switch-frames',
+
+  // Wave 0/7 additions
+  'scroll-px', 'scroll-to-anchor',
+  'zoom',
+  'config-cycle', 'config-unset', 'config-clear',
+  'selection-drop', 'selection-reverse', 'selection-follow',
+  'run-with-count', 'later', 'insert-text', 'fake-key',
+  'message-info', 'message-warning', 'message-error', 'messages',
+  'capture-full-page',
+  'search-selected', 'search-selected-site',
+  'feedkeys',
+  'session-save-and-close', 'session-restore-last',
+  'omnibar-downloads',
+  'open-browser-url',
 ];
 
 /**

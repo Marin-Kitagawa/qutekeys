@@ -9,7 +9,7 @@
  */
 
 const { fuzzyRank }    = require('./fuzzy');
-const { sourceBadge, urlAndSearch, bookmarks, history, tabs, commands, marks, recentlyClosed, closeTabs, windows } = require('./sources');
+const { sourceBadge, urlAndSearch, bookmarks, history, tabs, commands, marks, recentlyClosed, closeTabs, windows, downloads } = require('./sources');
 const { OMNIBAR_CSS }  = require('./omnibar.css');
 const { isSafeNavUrl } = require('../../core/url-safety');
 const { killToStart, killToEnd, deleteWordBack, wordBack, wordForward } = require('./readline');
@@ -285,6 +285,8 @@ class Omnibar {
         return closeTabs(q, m);
       case 'windows':
         return windows(q, m);
+      case 'downloads':
+        return downloads(q, m);
       default:
         return commands(q, r);
     }
@@ -331,6 +333,11 @@ class Omnibar {
       case 'move-to-window':
         if (this._messaging) {
           this._messaging.sendMessage({ type: 'command', name: 'tab-move-to-window', args: [action.windowId], flags: {}, count: null }).catch(() => {});
+        }
+        break;
+      case 'download-open':
+        if (this._messaging) {
+          this._messaging.sendMessage({ type: 'command', name: 'download-open', args: [action.downloadId], flags: {}, count: null }).catch(() => {});
         }
         break;
       default:
@@ -410,6 +417,36 @@ class Omnibar {
         case 'p':
           e.preventDefault(); e.stopPropagation(); this._moveSelection(-1);
           return;
+        case 'c':
+          // Copy focused item URL (or all listed URLs with shift)
+          e.preventDefault(); e.stopPropagation();
+          if (typeof navigator !== 'undefined' && navigator.clipboard) {
+            const urls = (e.shiftKey
+              ? this._results.map(r => (r.item && r.item.url) || '')
+              : [this._results[this._selected] && this._results[this._selected].item && this._results[this._selected].item.url]
+            ).filter(Boolean);
+            if (urls.length) navigator.clipboard.writeText(urls.join('\n')).catch(() => {});
+          }
+          return;
+        case 'd': {
+          // Delete focused item from its source (history/bookmark)
+          e.preventDefault(); e.stopPropagation();
+          const cur = this._results[this._selected];
+          const delUrl = cur && cur.item && cur.item.url;
+          const delType = cur && cur.item && cur.item.type;
+          if (delUrl && this._messaging) {
+            const cmd = delType === 'bookmark' ? 'bookmark-remove-url'
+              : delType === 'history' ? 'history-delete-url'
+              : null;
+            if (cmd) {
+              this._messaging.sendMessage({ type: 'command', name: cmd, args: [delUrl], flags: {}, count: null }).catch(() => {});
+              this._results.splice(this._selected, 1);
+              this._selected = Math.max(0, Math.min(this._selected, this._results.length - 1));
+              this._renderResults();
+            }
+          }
+          return;
+        }
       }
     }
     if (this._input && e.altKey && !e.ctrlKey) {
@@ -478,6 +515,7 @@ class Omnibar {
       'recently-closed': 'Recently closed tabs…',
       'close-tabs': 'Close tab…',
       'windows': 'Move to window…',
+      'downloads': 'Open a download…',
     };
     return MAP[name] || 'Type to search…';
   }

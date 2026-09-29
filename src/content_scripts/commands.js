@@ -26,6 +26,8 @@ const { registerNvimCommands }        = require('../commands/nvim-commands');
 const { registerHelpCommands }        = require('../commands/help-commands');
 const { registerPageCommands }        = require('../commands/page-commands');
 const { registerWave6Commands }       = require('../commands/wave6-commands');
+const { registerConfigCommands }      = require('../commands/config-commands');
+const { registerUtilCommands }        = require('../commands/util-commands');
 
 function registerAllContentCommands(registry, ctx = {}) {
   // Phase 20: per-domain userscripts (store is optional)
@@ -80,6 +82,16 @@ function registerAllContentCommands(registry, ctx = {}) {
 
   // Wave 6: Modes & macros (passthrough, macros, blocklist, scroll-target, etc.)
   registerWave6Commands(registry, ctx);
+
+  // Config commands (:set / :bind / :unbind / :profile) — require a Config
+  // instance from the bootstrap context.
+  if (ctx.config && !registry.get('set')) {
+    registerConfigCommands(registry, ctx.config);
+  }
+
+  // Utility commands (run-with-count, later, insert-text, fake-key, messages,
+  // capture-full-page, search-selected…).
+  registerUtilCommands(registry, ctx);
 }
 
 module.exports = { registerAllContentCommands };

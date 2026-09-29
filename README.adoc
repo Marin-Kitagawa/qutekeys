@@ -43,7 +43,7 @@ These capabilities are approximated with extension-level equivalents (omnibar ov
 === Modes (mode stack, qutebrowser semantics)
 
 * *Normal* — keyboard navigation active
-* *Insert* — key events passed through to the page; `<Escape>` returns to Normal
+* *Insert* — auto-entered when an editable element is focused; readline editing keys (`<C-e>`, `<C-a>`, `<C-u>`, `<A-b/f>` word motions, `<A-w/d>` word deletes, `<C-'>` toggle quotes); `<Escape>` returns to Normal
 * *Visual / Caret* — vim-like text selection with `h/j/k/l/w/b/0/$` motions
 * *Hints* — link/element selection overlay; `<Escape>` cancels
 * *Command* — omnibar / command palette open
@@ -151,6 +151,21 @@ Three ways to configure, all writing to the same `chrome.storage.local` store:
 === Generated help / cheatsheet
 
 `?` or `:help` opens a searchable cheatsheet page built from the command registry and the active profile's bindings, grouped by category.
+
+=== Extended command surface (qutebrowser / SurfingKeys parity)
+
+* *Config system* — `:set`, `:bind`, `:unbind`, `:profile`, `:config-cycle`, `:config-unset`, `:config-clear`
+* *Downloads manager* — `:download-list/cancel/remove/clear/open/show`, `:download-mhtml`, `:omnibar-downloads`
+* *Page tools* — `:jseval`, `:fake-key`, `:insert-text`, `:run-with-count`, `:later`, `:feedkeys`
+* *Messages* — `:message-info/warning/error`, `:messages` (translucent banner log)
+* *Capture* — `:capture-visible`, `:capture-full-page` (scrolling stitch → PNG)
+* *Proxy modes* — `:proxy-server`, `:proxy-mode always|direct|system|pac` (SurfingKeys semantics)
+* *Browser pages* — `:open-browser-url chrome://…` (whitelisted), SK keys `ga/gb/gd/ge/gh`
+* *Sessions* — `ZZ` save-and-close, `ZR` restore-last (qutebrowser semantics)
+* *Search selection* — `:search-selected [alias]`, `:search-selected-site` (`sg`/`so`)
+* *Homepage* — `:set homepage https://…` makes `home` navigate there
+* *Omnibar keys* — `<C-c>` copy focused/all URLs, `<C-d>` delete focused history/bookmark entry
+
 
 === Modern Glass UI
 
@@ -1029,6 +1044,9 @@ The `Config` class provides `load()`, `get(key)`, `set(key, value)`, `bind(mode,
 The options page's JS editor runs in `src/pages/sandbox.js` (opaque-origin iframe) and communicates structured mutations via `postMessage`.
 
 For full design rationale see `docs/superpowers/specs/2026-06-14-qutesurf-extension-design.md` and `docs/superpowers/plans/2026-06-14-qutesurf-extension.md`.
+The `Config` class additionally provides `cycle()`, `unset()`, `clearOptions()` and `getSearchEngines()` (built-in + user search aliases).
+
+For the current SurfingKeys / qutebrowser feature-parity status see `docs/FEATURE-PARITY.md`.
 
 ---
 
@@ -1036,7 +1054,7 @@ For full design rationale see `docs/superpowers/specs/2026-06-14-qutesurf-extens
 
 QuteSurf underwent a full security audit (`docs/SECURITY-AUDIT.md`).
 All High and Critical findings are resolved.
-As of the audit: 37 test suites / 121 tests pass, including 12 security-specific regression tests.
+Current status: 55 test suites / 299 tests pass, including the 12 security-specific regression tests from the audit.
 
 === Security posture summary
 
@@ -1092,22 +1110,28 @@ As of the audit: 37 test suites / 121 tests pass, including 12 security-specific
 | `paste-and-go` and `paste-and-go-newtab` read the clipboard. Pasted content is scheme-filtered before navigation.
 
 | `downloads`
-| `hint-download` and `download-url`; URLs are scheme-checked before passing to the downloads API.
+| `hint-download`, `download-url` and the download manager (`download-list/cancel/remove/clear/open/show`, `download-mhtml`, `download-dataurl`); URLs are scheme-checked before passing to the downloads API. `downloads.open` / `downloads.shelf` (Chrome) back `download-open` / `download-show`.
 
 | `sessions`
-| `tab-undo` (reopen closed tab) and session save/load/list.
+| `tab-undo` (reopen closed tab) and session save/load/list (including `ZZ` / `ZR`).
 
 | `proxy`
-| `proxy-set` / `proxy-clear` / `proxy-toggle-host` generate and apply a PAC script.
+| `proxy-set` / `proxy-clear` / `proxy-toggle-host` / `proxy-server` / `proxy-mode` generate and apply PAC or fixed-server proxy configuration.
 
 | `nativeMessaging`
 | Optional Neovim editing host (`connectNative('com.qutesurf.nvim')`); graceful ACE fallback when absent.
+
+| `scripting`
+| `:jseval` runs user JavaScript in the page via `chrome.scripting.executeScript` (MAIN world by default, `--isolated` for the content world). The service worker itself never evaluates strings.
+
+| `pageCapture` (Chrome)
+| `:download-mhtml` saves the current page as a single MHTML file.
 
 | `host_permissions: <all_urls>`
 | The extension operates on every page; the content script must match all URLs. Cannot be scoped without removing core functionality.
 |===
 
-Removed (unused): `scripting`, `topSites` (see QS-06 in `docs/SECURITY-AUDIT.md`).
+Note: `scripting` was reintroduced for `:jseval` (see above); `topSites` remains removed (see QS-06 in `docs/SECURITY-AUDIT.md`).
 
 ---
 
@@ -1172,6 +1196,8 @@ tests/
 
 docs/
   SECURITY-AUDIT.md         Full security audit and finding resolutions
+  FEATURE-PARITY.md         SurfingKeys / qutebrowser feature-parity audit + wave plan
+  KEYBINDING-GAP-AUDIT.md   Earlier keybinding audit (superseded by FEATURE-PARITY.md)
   superpowers/specs/        Design spec
   superpowers/plans/        Implementation plan
 ----

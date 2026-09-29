@@ -98,6 +98,66 @@ function registerProxyCommands(registry) {
     },
   });
 
+  // proxy-server <host:port> — store the fixed server used by proxy-mode always
+  registry.register({
+    name: 'proxy-server',
+    context: 'background',
+    description: 'Set the fixed proxy server used by "proxy-mode always". Usage: proxy-server <host:port>',
+    modes: ['normal'],
+    async handler(_ctx, { args }) {
+      const [server] = args;
+      if (!server) return 'Usage: proxy-server <host:port>';
+      const state = await loadState();
+      state.server = server;
+      await applyAndPersist(state);
+      return `proxy-server: ${server}`;
+    },
+  });
+
+  // proxy-mode <always|direct|system|pac> — global proxy mode (SurfingKeys)
+  registry.register({
+    name: 'proxy-mode',
+    context: 'background',
+    description: 'Set the global proxy mode: always (fixed server), direct, system, or pac (per-host rules)',
+    modes: ['normal'],
+    async handler(_ctx, { args }) {
+      const [mode] = args;
+      const VALID = ['always', 'direct', 'system', 'pac'];
+      if (!mode || !VALID.includes(mode)) {
+        return `Usage: proxy-mode <${VALID.join('|')}>>`;
+      }
+      const chrome = api();
+      const state = await loadState();
+      state.mode = mode;
+      await chrome.storage.local.set({ [STORAGE_KEY]: state });
+
+      if (mode === 'always') {
+        const server = state.server || (state.rules.length ? state.rules[0].proxy : null);
+        if (!server) return 'proxy-mode: no server configured — use proxy-server <host:port> first';
+        // Accept 'host:port' (or a full 'PROXY host:port' string).
+        const m = String(server).match(/^(?:PROXY\s+|HTTPS\s+|SOCKS\d?\s+)?([^:\s]+)(?::(\d+))?$/i);
+        if (!m) return `proxy-mode: cannot parse server "${server}"`;
+        const singleProxy = { scheme: 'http', host: m[1] };
+        if (m[2]) singleProxy.port = Number(m[2]);
+        await chrome.proxy.settings.set({
+          value: { mode: 'fixed_servers', rules: { singleProxy } },
+          scope: 'regular',
+        });
+      } else if (mode === 'pac' && state.rules.length > 0) {
+        const pac = buildPac(state.rules, 'DIRECT');
+        await chrome.proxy.settings.set({
+          value: { mode: 'pac_script', pacScript: { data: pac } },
+          scope: 'regular',
+        });
+      } else if (mode === 'system') {
+        await chrome.proxy.settings.set({ value: { mode: 'system' }, scope: 'regular' });
+      } else {
+        await chrome.proxy.settings.clear({ scope: 'regular' });
+      }
+      return `proxy-mode: ${mode}`;
+    },
+  });
+
   // proxy-toggle-host <host> — toggle whether a specific host is proxied
   registry.register({
     name: 'proxy-toggle-host',

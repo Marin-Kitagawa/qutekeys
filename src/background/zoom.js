@@ -41,6 +41,26 @@ function registerZoomCommands(registry) {
       return api().tabs.setZoom(tabId, 0);
     },
   });
+
+  registry.register({
+    name: 'zoom',
+    description: 'Set zoom to an absolute percentage (default zoom when no arg). Usage: zoom [percent]',
+    args: ['percent?'],
+    context: 'background',
+    modes: ['normal'],
+    handler: async (ctx, parsed) => {
+      const tabId = ctx.sender && ctx.sender.tab && ctx.sender.tab.id;
+      if (!parsed.args || !parsed.args[0]) {
+        // qutebrowser: :zoom with no args resets to default zoom
+        return api().tabs.setZoom(tabId, 0);
+      }
+      const perc = Number(parsed.args[0]);
+      if (!Number.isFinite(perc) || perc <= 0) {
+        throw new Error('zoom percent must be a positive number');
+      }
+      return api().tabs.setZoom(tabId, perc / 100);
+    },
+  });
 }
 
 module.exports = { registerZoomCommands };

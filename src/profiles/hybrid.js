@@ -238,6 +238,14 @@ module.exports = {
       ';dh':          'history-delete-old',
       // download-image: ;di (SK; no collision)
       ';di':          'download-image',
+
+      // ── Wave 7 additions (SK + qute parity, no collisions in hybrid) ──────
+      'yG':           'capture-full-page',   // SK full-page capture
+      'ZZ':           'session-save-and-close',
+      'ZR':           'session-restore-last',
+      'gA':           'omnibar-downloads',   // pick a recent download
+      'sg':           'search-selected',     // search selection w/ default engine
+      'so':           'search-selected-site',
     },
 
     insert: {

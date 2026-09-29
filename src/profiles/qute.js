@@ -171,6 +171,10 @@ module.exports = {
       'zo':           'zoom-out',
       '=':            'zoom-reset',
       'zr':           'zoom-reset',
+
+      // ── Sessions (qutebrowser ZZ / ZR semantics) ──────────────────────────
+      'ZZ':           'session-save-and-close',
+      'ZR':           'session-restore-last',
     },
 
     insert: {

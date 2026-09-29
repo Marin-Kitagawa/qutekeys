@@ -1,7 +1,7 @@
 'use strict';
 
 function registerWave6Commands(registry, ctx = {}) {
-  const { modes, passThrough, macros, blocklist, scrollTarget, dispatcher, messaging, vimEditor, omnibar } = ctx;
+  const { modes, passThrough, macros, blocklist, scrollTarget, dispatcher, messaging, vimEditor, omnibar, insert } = ctx;
 
   // Helper: captureNextKey (same pattern as marks-commands.js)
   function captureNextKey() {
@@ -16,6 +16,29 @@ function registerWave6Commands(registry, ctx = {}) {
       document.addEventListener('keydown', onKey, true);
     });
   }
+
+  // ── mode-insert ──────────────────────────────────────────────────────────
+  registry.register({
+    name: 'mode-insert',
+    description: 'Enter insert mode (focus first input if none focused; Esc to leave)',
+    context: 'content',
+    modes: ['normal'],
+    handler() {
+      if (insert) insert.enterExplicit();
+    },
+  });
+
+  // ── mode-normal ──────────────────────────────────────────────────────────
+  registry.register({
+    name: 'mode-normal',
+    description: 'Leave the current mode and return to normal mode',
+    context: 'content',
+    modes: ['insert', 'normal'],
+    handler() {
+      if (insert && insert.leaveIfActive()) return;
+      if (modes && modes.current() !== 'normal') modes.leave();
+    },
+  });
 
   // ── mode-passthrough ───────────────────────────────────────────────────────
   registry.register({

@@ -7,6 +7,9 @@ function fakeChrome(initial = {}) {
   const _zoomMap = {};                  // tabId → zoom factor
   const _zoomSetCalls = [];             // [{tabId, factor}] for assertions
   const _captureVisibleCalls = [];      // for assertions
+  const _reloadCalls = [];              // [{tabId, opts}]
+  const _downloadCalls = [];            // ['cancel'|'erase'|'open'|'show', …]
+  const _removedWindows = [];           // windows.remove calls
 
   const _bookmarks = Array.isArray(initial._bookmarks) ? [...initial._bookmarks] : [];
   let nextBookmarkId = _bookmarks.length + 1;
@@ -58,13 +61,20 @@ function fakeChrome(initial = {}) {
       // Wave 5: capture support
       captureVisibleTab: async () => { _captureVisibleCalls.push(true); return 'data:image/png;base64,AAAA'; },
       _captureVisibleCalls,
+      // Wave 7: hard reload support
+      reload: async (tabId, opts) => { _reloadCalls.push({ tabId, opts }); },
     },
+    _reloadCalls,
     history: (function () {
       const _deleteRangeCalls = [];
+      const _deletedUrls = [];
       return {
         search: async ({ text }) => [{ url: 'https://hist.com', title: 'Hist ' + text, visitCount: 3 }],
         deleteRange: async (range) => { _deleteRangeCalls.push(range); },
+        deleteUrl: async ({ url }) => { _deletedUrls.push(url); },
+        deleteAll: async () => { _deletedUrls.push('*'); },
         _deleteRangeCalls,
+        _deletedUrls,
       };
     })(),
     bookmarks: {
@@ -92,7 +102,18 @@ function fakeChrome(initial = {}) {
         if (i >= 0) _bookmarks.splice(i, 1);
       },
     },
-    downloads: { download: async ({ url }) => { return 42; } },
+    downloads: {
+      download: async ({ url }) => { return 42; },
+      search: async (q) => [
+        { id: 1, url: 'https://f.com/a.zip', finalUrl: 'https://f.com/a.zip', filename: 'C:/dl/a.zip', state: 'complete', mime: 'application/zip', fileSize: 10, paused: false, startTime: '2026-01-02' },
+        { id: 2, url: 'https://f.com/b.zip', finalUrl: 'https://f.com/b.zip', filename: 'C:/dl/b.zip', state: 'in_progress', mime: 'application/zip', fileSize: 0, paused: false, startTime: '2026-01-03' },
+      ].filter(d => !q || q.state === undefined || d.state === q.state),
+      cancel: async (id) => { _downloadCalls.push(['cancel', id]); },
+      erase: async (q) => { _downloadCalls.push(['erase', q]); return []; },
+      open: async (id) => { _downloadCalls.push(['open', id]); },
+      show: async (id) => { _downloadCalls.push(['show', id]); },
+      _calls: _downloadCalls,
+    },
     sessions: (function() {
       const _restored = [];
       return {
@@ -109,8 +130,10 @@ function fakeChrome(initial = {}) {
         return w;
       },
       update: async () => ({}),
+      remove: async (windowId) => { _removedWindows.push(windowId); },
       getAll: async () => [{ id: 1, focused: true, tabs: [{ title: 'A', active: true }] }],
       _created: _windowsCreated,
+      _removed: _removedWindows,
     },
     storage: {
       local: makeStorage(),

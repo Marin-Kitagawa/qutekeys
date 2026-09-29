@@ -14,6 +14,29 @@ function registerHistoryCommands(registry) {
   });
 
   registry.register({
+    name: 'history-delete-url',
+    description: 'Delete all history entries for a URL (used by omnibar Ctrl-D)',
+    args: ['url'],
+    context: 'background',
+    modes: ['normal'],
+    handler: async (_ctx, parsed) => {
+      const url = parsed.args && parsed.args[0];
+      if (!url) throw new Error('history-delete-url requires a url');
+      return api().history.deleteUrl({ url });
+    },
+  });
+
+  registry.register({
+    name: 'history-clear',
+    description: 'Clear the entire browser history',
+    context: 'background',
+    modes: ['normal'],
+    handler: async (_ctx, _parsed) => {
+      return api().history.deleteAll();
+    },
+  });
+
+  registry.register({
     name: 'history-delete-old',
     description: 'Delete browser history older than 30 days',
     context: 'background',

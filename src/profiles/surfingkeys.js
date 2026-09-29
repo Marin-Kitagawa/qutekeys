@@ -220,6 +220,21 @@ module.exports = {
       ';di': 'download-image',
       // history-delete-old: SK ;dh (mnemonic: ;Delete History)
       ';dh': 'history-delete-old',
+
+      // ── Wave 7 additions (SK parity, no collisions in this profile) ───────
+      'yG':  'capture-full-page',     // SK: capture full page
+      'ZZ':  'session-save-and-close', // SK: save session and quit
+      'ZR':  'session-restore-last',   // SK: restore last session
+      'sg':  'search-selected',        // SK: search selection w/ default engine
+      'so':  'search-selected-site',   // SK: search selection within site
+
+      // ── Browser-internal pages (SK ga/gb/gd/ge/gh; Chrome; Firefox users can
+      // rebind to about: equivalents) ──
+      'ga':  'open-browser-url chrome://about',
+      'gb':  'open-browser-url chrome://bookmarks',
+      'gd':  'open-browser-url chrome://downloads',
+      'ge':  'open-browser-url chrome://extensions',
+      'gh':  'open-browser-url chrome://history',
     },
 
     insert: {

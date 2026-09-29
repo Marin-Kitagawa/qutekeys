@@ -35,6 +35,7 @@ const { VimEditor }          = require('./ui/editor');
 const { NvimEditor }         = require('./nvim');
 const { Omnibar }            = require('./ui/omnibar');
 const { PassThrough }        = require('./passthrough');
+const { Insert }             = require('./insert');
 const { Macros }             = require('./macros');
 const { Blocklist }          = require('../core/blocklist');
 const { ScrollTarget }       = require('./scroll-target');
@@ -149,6 +150,9 @@ async function init() {
 
   // ── Visual / caret controller ─────────────────────────────────────────────
   const visual = new Visual({ host, modes });
+  if (typeof visual.setMessaging === 'function') {
+    visual.setMessaging((url) => messaging.sendMessage({ type: 'command', name: 'tab-new-background', args: [url] }));
+  }
 
   // ── Vim editor overlay (Phase 21) ─────────────────────────────────────────
   const vimEditor = new VimEditor({ host, modes });
@@ -173,6 +177,29 @@ async function init() {
   // ── Wave 6: PassThrough, Macros, ScrollTarget ─────────────────────────────
   const passThrough = new PassThrough({ modes });
   const scrollTarget = new ScrollTarget();
+
+  // ── Insert mode controller (auto-enter on editable focus, readline keys) ──
+  const insertKeymap = new KeyMap();
+  const profileInsertBindings = (profile && profile.bindings && profile.bindings.insert) || {};
+  for (const [seq, cmd] of Object.entries(profileInsertBindings)) {
+    insertKeymap.bind(seq, cmd);
+  }
+  const userInsertBindings = config ? config.getUserBindings('insert') : {};
+  for (const [seq, cmd] of Object.entries(userInsertBindings)) {
+    insertKeymap.bind(seq, cmd);
+  }
+  const insert = new Insert({
+    modes,
+    insertKeymap,
+    onCommand(command) {
+      const parsed = parseCommandLine(command);
+      dispatcher.run(parsed.name, { args: parsed.args, flags: parsed.flags, count: null }).catch(err => {
+        // eslint-disable-next-line no-console
+        console.warn('[QuteSurf] insert-mode command error:', err);
+      });
+    },
+  });
+  insert.installFocusTracking();
   // macros.onReplayKey is wired to keyHandler.handleKey after keyHandler is constructed.
   const macros = new Macros({ onReplayKey: (keyStr) => {
     if (typeof _keyHandlerRef !== 'undefined' && _keyHandlerRef) {
@@ -193,7 +220,7 @@ async function init() {
   }
 
   // ── Register all content commands (nav, hints, …) ─────────────────────────
-  registerAllContentCommands(registry, { hintsController, dispatcher, messaging, config, modes, finder, visual, marks, userscriptStore, vimEditor, nvimEditor, omnibar, passThrough, macros, blocklist, scrollTarget });
+  registerAllContentCommands(registry, { hintsController, dispatcher, messaging, config, modes, finder, visual, marks, userscriptStore, vimEditor, nvimEditor, omnibar, passThrough, macros, blocklist, scrollTarget, insert, host });
 
   // ── Key handler ───────────────────────────────────────────────────────────
   // eslint-disable-next-line prefer-const
@@ -217,6 +244,24 @@ async function init() {
 
   // Wire macros replay key reference now that keyHandler is constructed
   _keyHandlerRef = keyHandler;
+
+  // ── feedkeys — feed keys into the normal-mode keymap ────────────────────
+  // Registered here because it needs the live KeyHandler reference.
+  registry.register({
+    name: 'feedkeys',
+    description: 'Feed key presses into normal mode. Usage: feedkeys <keys>',
+    args: ['keys'],
+    context: 'content',
+    modes: ['normal'],
+    handler(_ctx, parsed) {
+      const seq = parsed.args.join(' ');
+      // Feed each printable character / token sequentially
+      const tokens = seq.match(/<[^<>]+>|\S| /g) || [];
+      for (const t of tokens) {
+        keyHandler.handleKey(t);
+      }
+    },
+  });
 
   // ── Keydown listener ─────────────────────────────────────────────────────
   // Mode-aware: only drives the normal keymap in normal mode; other modes are

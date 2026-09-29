@@ -16,6 +16,7 @@ function sourceBadge(item) {
     search:   'SEARCH',
     url:      'URL',
     mark:     'MARK',
+    download: 'DL',
   };
   return MAP[item.type] || '';
 }
@@ -116,17 +117,25 @@ async function commands(query, registry) {
 
 /**
  * Marks source — reads marks from config (may be empty).
+ *
+ * Marks entries are stored by core/marks.js as key → { url, scrollY }.
+ * Legacy plain string values (key → url) are also tolerated.
  */
 async function marks(query, config) {
   if (!config) return [];
   const markMap = (config.get && config.get('marks')) || {};
   return Object.entries(markMap)
-    .filter(([key, url]) => !query || key.includes(query) || (url || '').includes(query))
-    .map(([key, url]) => ({
+    .map(([key, val]) => {
+      const url = typeof val === 'string' ? val : (val && val.url) || '';
+      const scrollY = val && typeof val === 'object' ? val.scrollY : undefined;
+      return { key, url, scrollY };
+    })
+    .filter(m => m.url && (!query || m.key.includes(query) || m.url.includes(query)))
+    .map(m => ({
       type: 'mark',
-      title: `${key}: ${url}`,
-      url: url || '',
-      action: { kind: 'open', url: url || '' },
+      title: `${m.key}: ${m.url}`,
+      url: m.url,
+      action: { kind: 'open', url: m.url },
     }));
 }
 
@@ -181,6 +190,30 @@ async function windows(query, messaging) {
   } catch (_) { return []; }
 }
 
+/**
+ * Downloads source — queries background for recent downloads.
+ */
+async function downloads(query, messaging) {
+  if (!messaging) return [];
+  try {
+    const result = await messaging.sendMessage({ type: 'command', name: 'download-list', args: [], flags: {}, count: null });
+    const items = Array.isArray(result)
+      ? result
+      : (result && Array.isArray(result.result) ? result.result : []);
+    return items
+      .filter(d => !query
+        || (d.filename || '').toLowerCase().includes(query.toLowerCase())
+        || (d.url || '').toLowerCase().includes(query.toLowerCase()))
+      .map(d => ({
+        type: 'download',
+        title: (d.filename || d.url || '').split('/').pop() || 'download',
+        url: d.url || '',
+        description: d.state || '',
+        action: { kind: 'download-open', downloadId: d.id },
+      }));
+  } catch (_) { return []; }
+}
+
 module.exports = {
   sourceBadge,
   urlAndSearch,
@@ -192,4 +225,5 @@ module.exports = {
   recentlyClosed,
   closeTabs,
   windows,
+  downloads,
 };
