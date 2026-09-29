@@ -39,6 +39,7 @@
     "@fontsource/bricolage-grotesque": "^5.2.10",
     "@fontsource/fira-code": "^5.2.7",
     "@fontsource/hanken-grotesk": "^5.2.8",
-    "ace-builds": "^1.44.0"
+    "ace-builds": "^1.44.0",
+    "pdfjs-dist": "^4.10.38"
   }
 }

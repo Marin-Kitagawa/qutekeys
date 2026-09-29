@@ -37,7 +37,8 @@
     "sessions",
     "proxy",
     "nativeMessaging",
-    "scripting"
+    "scripting",
+    "contextualIdentities"
   ],
   "host_permissions": ["<all_urls>"],
   "content_scripts": [

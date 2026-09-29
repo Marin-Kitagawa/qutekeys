@@ -246,6 +246,14 @@ module.exports = {
       'gA':           'omnibar-downloads',   // pick a recent download
       'sg':           'search-selected',     // search selection w/ default engine
       'so':           'search-selected-site',
+
+      // ── Wave 8 (collisions checked) ────────────────────────────────────
+      'Q':            'inline-query',
+      'A':            'llm-chat-open',
+      ';pm':          'preview-markdown',
+      ';s':           'pdf-viewer-toggle',
+      'cq':           'queue-add',
+      ';cl':          'container-open Personal',
     },
 
     insert: {

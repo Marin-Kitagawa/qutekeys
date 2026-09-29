@@ -35,8 +35,9 @@ function fakeChrome(initial = {}) {
         (q.currentWindow === undefined || true) &&
         (q.audible === undefined || t.audible === q.audible)
       ),
-      create: async ({ url, active = true } = {}) => {
+      create: async ({ url, active = true, cookieStoreId } = {}) => {
         const t = { id: nextId++, index: tabs.length, active, url: url || 'chrome://newtab/', windowId: 1, pinned: false, mutedInfo: { muted: false }, audible: false };
+        if (cookieStoreId) t.cookieStoreId = cookieStoreId;
         tabs.push(t);
         return t;
       },
@@ -122,7 +123,7 @@ function fakeChrome(initial = {}) {
         _restored,
       };
     })(),
-    runtime: { lastError: null, onMessage: { addListener() {} }, sendMessage: async () => ({}) },
+    runtime: { lastError: null, onMessage: { addListener() {} }, sendMessage: async () => ({}), getURL: (p) => 'chrome-extension://test-extension/' + String(p).replace(/^\//, '') },
     windows: {
       create: async (props = {}) => {
         const w = { id: _windowsCreated.length + 99, tabs: props.tabId ? [tabs.find(t => t.id === props.tabId)].filter(Boolean) : [], ...props };

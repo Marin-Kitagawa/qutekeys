@@ -18,6 +18,7 @@ function registerOmnibarCommands(registry, omnibar) {
     { name: 'omnibar-marks',        source: 'marks',       description: 'Jump to a mark via omnibar' },
     { name: 'cmdline',              source: 'commands',    description: 'Open command palette (:)' },
     { name: 'omnibar-downloads',    source: 'downloads',   description: 'Open a recent download via omnibar' },
+    { name: 'omnibar-queue',      source: 'queue',       description: 'Open a queued URL via omnibar' },
   ];
 
   for (const { name, source, description } of entries) {

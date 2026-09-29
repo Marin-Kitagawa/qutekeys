@@ -92,6 +92,23 @@ function registerMiscCommands(registry) {
       return api().tabs.captureVisibleTab();
     },
   });
+
+  // open-extension-page <name> — open a whitelisted bundled extension page
+  const EXTENSION_PAGES = ['markdown.html', 'pdf.html', 'help.html'];
+  registry.register({
+    name: 'open-extension-page',
+    description: 'Open a bundled extension page (markdown.html, pdf.html, help.html)',
+    args: ['name'],
+    context: 'background',
+    modes: ['normal'],
+    handler: async (_ctx, parsed) => {
+      const name = parsed.args && parsed.args[0];
+      if (!name || !EXTENSION_PAGES.includes(name)) {
+        throw new Error('open-extension-page: page not allowed: ' + name);
+      }
+      return api().tabs.create({ url: api().runtime.getURL('pages/' + name) });
+    },
+  });
 }
 
 module.exports = { registerMiscCommands, isAllowedBrowserUrl, BROWSER_URL_PREFIXES };

@@ -166,6 +166,29 @@ Three ways to configure, all writing to the same `chrome.storage.local` store:
 * *Homepage* — `:set homepage https://…` makes `home` navigate there
 * *Omnibar keys* — `<C-c>` copy focused/all URLs, `<C-d>` delete focused history/bookmark entry
 
+=== Wave 8 — pluggable extras (now built in)
+
+* *Bundled PDF viewer* — `:pdf-viewer-toggle` (`;s`) redirects `.pdf` navigations to the
+  bundled pdf.js viewer (`pages/pdf.html`, lazy page rendering, `J/K` scroll, `gg/G`,
+  `+/-/0` zoom); `:pdf-viewer-open [url]` opens any URL in it directly.
+* *Markdown preview* — `:preview-markdown` (`;pm`) renders the selection (or clipboard)
+  with an escape-first renderer in a preview tab (`pages/markdown.html`).
+* *Inline query bubble* — `:inline-query` (`Q`; selection or word under the caret) queries
+  a user-configured GET endpoint (`:set inlinequery.url <url-with-%s>`, e.g. a dictionary
+  API) and shows a shadow-DOM bubble.
+* *LLM chat panel* — `:llm-chat-open` (`A`; prefilled with the selection) — OpenAI-compatible
+  chat UI with history, configured via `:set llm.endpoint / llm.model / llm.apikey /
+  llm.system`. Requests run in the background worker; the key never touches the page.
+* *Emoji picker* — `:` while in insert mode (or `:emoji-picker`) opens a searchable emoji
+  grid that inserts at the caret (copies when nothing is focused).
+* *Tab queue* — `:queue-add` (`cq`), `:omnibar-queue` (open + consume), `:queue-open-all`,
+  `:queue-clear`.
+* *TTS voice management* — `:tts-voices` lists voices; `:tts-say <text>` and `read-aloud`
+  honor the `tts.lang` / `tts.rate` options.
+* *Firefox containers* — `:container-open <name> [url]` (`;cl` bound to the `Personal`
+  container) opens URLs in a named container via `contextualIdentities` (Firefox only;
+  Chrome reports the limitation).
+
 
 === Modern Glass UI
 
@@ -1126,6 +1149,9 @@ Current status: 55 test suites / 299 tests pass, including the 12 security-speci
 
 | `pageCapture` (Chrome)
 | `:download-mhtml` saves the current page as a single MHTML file.
+
+| `contextualIdentities` (Firefox)
+| `:container-open` opens URLs in a named Firefox container. Chrome has no equivalent; the command reports that gracefully.
 
 | `host_permissions: <all_urls>`
 | The extension operates on every page; the content script must match all URLs. Cannot be scoped without removing core functionality.

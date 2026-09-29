@@ -17,6 +17,7 @@ function sourceBadge(item) {
     url:      'URL',
     mark:     'MARK',
     download: 'DL',
+    queue: 'QUEUE',
   };
   return MAP[item.type] || '';
 }
@@ -214,6 +215,29 @@ async function downloads(query, messaging) {
   } catch (_) { return []; }
 }
 
+/**
+ * Tab queue source (Wave 8) — open removes the entry from the queue.
+ */
+async function queue(query, messaging) {
+  if (!messaging) return [];
+  try {
+    const result = await messaging.sendMessage({ type: 'command', name: 'queue-list', args: [], flags: {}, count: null });
+    const items = Array.isArray(result)
+      ? result
+      : (result && Array.isArray(result.result) ? result.result : []);
+    return items
+      .filter(item => item && item.url && (!query
+        || (item.title || '').toLowerCase().includes(query.toLowerCase())
+        || item.url.toLowerCase().includes(query.toLowerCase())))
+      .map((item, idx) => ({
+        type: 'queue',
+        title: item.title || item.url,
+        url: item.url,
+        action: { kind: 'queue-open', index: idx, url: item.url },
+      }));
+  } catch (_) { return []; }
+}
+
 module.exports = {
   sourceBadge,
   urlAndSearch,
@@ -226,4 +250,5 @@ module.exports = {
   closeTabs,
   windows,
   downloads,
+  queue,
 };

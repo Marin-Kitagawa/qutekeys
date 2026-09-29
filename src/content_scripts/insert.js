@@ -236,6 +236,9 @@ function Insert(opts) {
   const modes = opts && opts.modes;
   const insertKeymap = (opts && opts.insertKeymap) || null;
   const onCommand = (opts && opts.onCommand) || null;
+  // Optional hook: (e, editableEl) => boolean. Return true to consume the key
+  // (used by the emoji picker: `:` in insert mode).
+  const onHook = (opts && opts.onHook) || null;
 
   let _keyListener = null;
   let _focusIn = null;
@@ -277,6 +280,17 @@ function Insert(opts) {
 
       const el = _activeElement();
       const editable = isEditable(el);
+
+      // Extension hook (emoji picker etc.) — runs before readline handling
+      if (onHook && editable && el) {
+        let handled = false;
+        try { handled = !!onHook(e, el); } catch (_) { handled = false; }
+        if (handled) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+      }
 
       // Custom insert-mode bindings (profile/user) take precedence.
       // Plain printable characters NEVER go through the keymap — typing must

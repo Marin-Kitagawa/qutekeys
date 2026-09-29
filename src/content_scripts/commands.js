@@ -28,6 +28,7 @@ const { registerPageCommands }        = require('../commands/page-commands');
 const { registerWave6Commands }       = require('../commands/wave6-commands');
 const { registerConfigCommands }      = require('../commands/config-commands');
 const { registerUtilCommands }        = require('../commands/util-commands');
+const { registerWave8Commands }       = require('../commands/wave8-commands');
 
 function registerAllContentCommands(registry, ctx = {}) {
   // Phase 20: per-domain userscripts (store is optional)
@@ -92,6 +93,10 @@ function registerAllContentCommands(registry, ctx = {}) {
   // Utility commands (run-with-count, later, insert-text, fake-key, messages,
   // capture-full-page, search-selected…).
   registerUtilCommands(registry, ctx);
+
+  // Wave 8: markdown preview, inline query, LLM chat, emoji picker, TTS,
+  // containers.
+  registerWave8Commands(registry, ctx);
 }
 
 module.exports = { registerAllContentCommands };

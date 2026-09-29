@@ -175,6 +175,14 @@ module.exports = {
       // ── Sessions (qutebrowser ZZ / ZR semantics) ──────────────────────────
       'ZZ':           'session-save-and-close',
       'ZR':           'session-restore-last',
+
+      // ── Wave 8 (collisions checked) ────────────────────────────────────
+      'Q':            'inline-query',
+      'A':            'llm-chat-open',
+      ';pm':          'preview-markdown',
+      ';s':           'pdf-viewer-toggle',
+      'cq':           'queue-add',
+      ';cl':          'container-open Personal',
     },
 
     insert: {

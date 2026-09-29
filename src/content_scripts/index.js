@@ -36,6 +36,9 @@ const { NvimEditor }         = require('./nvim');
 const { Omnibar }            = require('./ui/omnibar');
 const { PassThrough }        = require('./passthrough');
 const { Insert }             = require('./insert');
+const { InlineQuery }        = require('./inlinequery');
+const { LLMChat }            = require('./llmchat');
+const { EmojiPicker }        = require('./emoji');
 const { Macros }             = require('./macros');
 const { Blocklist }          = require('../core/blocklist');
 const { ScrollTarget }       = require('./scroll-target');
@@ -178,6 +181,11 @@ async function init() {
   const passThrough = new PassThrough({ modes });
   const scrollTarget = new ScrollTarget();
 
+  // ── Wave 8: inline query bubble, LLM chat, emoji picker ─────────────────
+  const inlineQuery = new InlineQuery({ host, messaging });
+  const llmChat = new LLMChat({ host, messaging });
+  const emojiPicker = new EmojiPicker({ host, modes, config });
+
   // ── Insert mode controller (auto-enter on editable focus, readline keys) ──
   const insertKeymap = new KeyMap();
   const profileInsertBindings = (profile && profile.bindings && profile.bindings.insert) || {};
@@ -197,6 +205,14 @@ async function init() {
         // eslint-disable-next-line no-console
         console.warn('[QuteSurf] insert-mode command error:', err);
       });
+    },
+    onHook(e, el) {
+      // SurfingKeys parity: `:` in insert mode opens the emoji picker
+      if (e.key === ':' && config && typeof config.get === 'function' && config.get('emoji')) {
+        emojiPicker.open(el);
+        return true;
+      }
+      return false;
     },
   });
   insert.installFocusTracking();
@@ -220,7 +236,7 @@ async function init() {
   }
 
   // ── Register all content commands (nav, hints, …) ─────────────────────────
-  registerAllContentCommands(registry, { hintsController, dispatcher, messaging, config, modes, finder, visual, marks, userscriptStore, vimEditor, nvimEditor, omnibar, passThrough, macros, blocklist, scrollTarget, insert, host });
+  registerAllContentCommands(registry, { hintsController, dispatcher, messaging, config, modes, finder, visual, marks, userscriptStore, vimEditor, nvimEditor, omnibar, passThrough, macros, blocklist, scrollTarget, insert, host, inlineQuery, llmChat, emojiPicker });
 
   // ── Key handler ───────────────────────────────────────────────────────────
   // eslint-disable-next-line prefer-const

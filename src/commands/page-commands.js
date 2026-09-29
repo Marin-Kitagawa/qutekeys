@@ -13,6 +13,16 @@
 const { stripQuery, stripHash, incrementUrl, findRelLink } = require('./nav-helpers');
 
 function registerPageCommands(registry, ctx = {}) {
+  const _config = ctx.config || null;
+  function _getTtsLang() {
+    const v = _config && typeof _config.get === 'function' ? _config.get('tts.lang') : '';
+    return v ? String(v) : null;
+  }
+  function _getTtsRate() {
+    const v = _config && typeof _config.get === 'function' ? _config.get('tts.rate') : '';
+    const n = Number(v);
+    return n > 0 ? n : null;
+  }
   // ── Fullscreen ──────────────────────────────────────────────────────────────
   registry.register({
     name: 'fullscreen',
@@ -141,6 +151,16 @@ function registerPageCommands(registry, ctx = {}) {
         '';
       if (!text) return;
       const utt = new window.SpeechSynthesisUtterance(text);
+      // Voice selection via tts.lang / tts.rate options (Wave 8)
+      const cfgLang = _getTtsLang();
+      if (cfgLang) {
+        utt.lang = cfgLang;
+        const voice = window.speechSynthesis.getVoices().find(v => v.lang === cfgLang);
+        if (voice) utt.voice = voice;
+      }
+      const cfgRate = _getTtsRate();
+      if (cfgRate) utt.rate = cfgRate;
+      window.speechSynthesis.cancel();
       window.speechSynthesis.speak(utt);
     },
   });

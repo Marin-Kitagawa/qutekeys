@@ -55,6 +55,21 @@ module.exports = (env, argv) => {
             from: path.resolve(__dirname, '../src/content_scripts/content.css'),
             to: path.resolve(outputPath, 'content.css'),
           },
+          {
+            // PDF viewer engine (Wave 8) — copied verbatim; pages/pdf.js imports it
+            from: path.resolve(__dirname, '../node_modules/pdfjs-dist/build/pdf.min.mjs'),
+            to: path.resolve(outputPath, 'pages/pdfjs/pdf.min.mjs'),
+          },
+          {
+            from: path.resolve(__dirname, '../node_modules/pdfjs-dist/build/pdf.worker.min.mjs'),
+            to: path.resolve(outputPath, 'pages/pdfjs/pdf.worker.min.mjs'),
+          },
+          {
+            // Markdown preview renderer (Wave 8) — core/markdown.js exposed as
+            // a browser global by the dual-export shim inside the file.
+            from: path.resolve(__dirname, '../src/core/markdown.js'),
+            to: path.resolve(outputPath, 'pages/markdown-renderer.js'),
+          },
         ],
       }),
     ],

@@ -180,6 +180,42 @@ Waves 0–8 deliver full feasible parity. Items marked N/A are documented, not p
   TTS voice management, Firefox containers. These need extra data bundles,
   user-configured external endpoints, or niche APIs — tracked as future work.
 
+## D2. Wave 8 status — IMPLEMENTED (2026-09-29, no longer deferred)
+
+All Wave 8 items are implemented:
+
+- **PDF viewer:** `pdfjs-dist` bundled via webpack copy (`pages/pdfjs/`),
+  `pages/pdf.html` + `pages/pdf.js` (lazy per-page rendering, J/K/gg/G/+/-/0
+  keys). Toggle `;s` / `:pdf-viewer-toggle` flips a storage flag consulted by a
+  `chrome.tabs.onUpdated` redirect in the service worker (`attachPdfRedirect`);
+  `:pdf-viewer-open [url]` opens the viewer directly.
+- **Markdown preview:** `src/core/markdown.js` (pure, escape-first renderer,
+  dual CommonJS/browser-global export) + `pages/markdown(.html|.js)`;
+  `:preview-markdown` (`;pm`) writes `qutesurf:preview` to storage and opens
+  the page via the whitelisted `open-extension-page` background command.
+- **Inline query:** `src/content_scripts/inlinequery.js` bubble + background
+  `inline-query` command (fetch in SW, `inlinequery.url` template with %s,
+  truncated to 4000 chars). Bound to `Q` (selection or word under caret).
+- **LLM chat:** `src/content_scripts/llmchat.js` panel + background `llm-chat`
+  command (OpenAI-compatible `/chat/completions`; settings `llm.endpoint`,
+  `llm.model`, `llm.apikey`, `llm.system` via `:set`; args are URL-encoded JSON
+  tokens). Bound to `A`, prefilled with the selection.
+- **Emoji picker:** `src/content_scripts/emoji.js` (~230 emoji dataset),
+  opened by `:` in insert mode (Insert `onHook` + `emoji: true` config) or
+  `:emoji-picker`; inserts at caret or copies.
+- **Tab queue:** background `queue-add/list/remove/clear/open-all`
+  (`qutesurf:queue` storage) + `omnibar-queue` source whose open action
+  consumes the entry; `cq` binds queue-add.
+- **TTS voices:** `:tts-voices` (banner + console.table), `:tts-say`, and
+  `read-aloud` now honor `tts.lang` / `tts.rate` options.
+- **Firefox containers:** background `open-in-container` via
+  `contextualIdentities` (exact then case-insensitive prefix match);
+  content `container-open` + `;cl` binding (default container `Personal`).
+  Chrome reports the limitation.
+
+New permissions: `contextualIdentities` (Firefox manifest only).
+New dependency: `pdfjs-dist` (assets copied, not bundled into content).
+
 New permissions added to the manifests: `scripting`, `pageCapture`
 (Chrome), `downloads.open`, `downloads.shelf` (Chrome).
 

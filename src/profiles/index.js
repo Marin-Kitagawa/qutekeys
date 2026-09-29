@@ -117,6 +117,16 @@ const CANONICAL_COMMANDS = [
   'session-save-and-close', 'session-restore-last',
   'omnibar-downloads',
   'open-browser-url',
+
+  // Wave 8
+  'pdf-viewer-toggle', 'pdf-viewer-open',
+  'preview-markdown',
+  'inline-query',
+  'llm-chat-open',
+  'emoji-picker',
+  'queue-add', 'queue-clear', 'queue-open-all', 'omnibar-queue',
+  'tts-voices', 'tts-say',
+  'container-open',
 ];
 
 /**

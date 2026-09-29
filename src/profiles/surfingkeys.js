@@ -235,6 +235,14 @@ module.exports = {
       'gd':  'open-browser-url chrome://downloads',
       'ge':  'open-browser-url chrome://extensions',
       'gh':  'open-browser-url chrome://history',
+
+      // ── Wave 8 (SK parity; collisions checked) ────────────────────────
+      'Q':    'inline-query',
+      'A':    'llm-chat-open',
+      ';pm':  'preview-markdown',
+      ';s':   'pdf-viewer-toggle',
+      'cq':   'queue-add',
+      ';cl':  'container-open Personal',
     },
 
     insert: {

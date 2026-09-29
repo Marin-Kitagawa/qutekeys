@@ -10,6 +10,10 @@ const { registerKeymapCommands } = require('./keymap');
 const { registerZoomCommands } = require('./zoom');
 const { registerCaptureCommands } = require('./capture');
 const { registerMiscCommands } = require('./misc');
+const { registerPdfCommands, attachPdfRedirect } = require('./pdfviewer');
+const { registerQueueCommands } = require('./queue');
+const { registerContainerCommands } = require('./containers');
+const { registerLlmCommands } = require('./llm');
 
 /**
  * Create a message router for background commands.
@@ -59,6 +63,10 @@ function buildBackgroundRegistry() {
   registerZoomCommands(registry);
   registerCaptureCommands(registry);
   registerMiscCommands(registry);
+  registerPdfCommands(registry);
+  registerQueueCommands(registry);
+  registerContainerCommands(registry);
+  registerLlmCommands(registry);
   registerKeymapCommands(registry);
   return registry;
 }
@@ -75,6 +83,9 @@ if (
 ) {
   const _registry = buildBackgroundRegistry();
   const _router = makeRouter(_registry);
+
+  // Wave 8: redirect .pdf navigations to the bundled viewer when enabled
+  attachPdfRedirect();
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     _router({ ...message, sender })

@@ -287,6 +287,8 @@ class Omnibar {
         return windows(q, m);
       case 'downloads':
         return downloads(q, m);
+      case 'queue':
+        return queue(q, m);
       default:
         return commands(q, r);
     }
@@ -338,6 +340,13 @@ class Omnibar {
       case 'download-open':
         if (this._messaging) {
           this._messaging.sendMessage({ type: 'command', name: 'download-open', args: [action.downloadId], flags: {}, count: null }).catch(() => {});
+        }
+        break;
+      case 'queue-open':
+        if (this._messaging) {
+          // Consume the entry, then open its URL in the current tab
+          this._messaging.sendMessage({ type: 'command', name: 'queue-remove', args: [String(action.index)], flags: {}, count: null }).catch(() => {});
+          this._openUrl(action.url, false);
         }
         break;
       default:
@@ -516,6 +525,7 @@ class Omnibar {
       'close-tabs': 'Close tab…',
       'windows': 'Move to window…',
       'downloads': 'Open a download…',
+      'queue': 'Open queued URL…',
     };
     return MAP[name] || 'Type to search…';
   }

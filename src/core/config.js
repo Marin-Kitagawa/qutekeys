@@ -12,6 +12,9 @@ const DEFAULTS = {
   defaultsearchengine: 'g',
   theme: 'aurora',
   homepage: '',
+  emoji: true,
+  'tts.lang': '',
+  'tts.rate': 1,
 };
 
 const EMPTY_STATE = () => ({
