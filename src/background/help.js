@@ -117,6 +117,46 @@ function getVocabularyRegistry() {
 
 function registerHelpSheetCommands(registry) {
   registry.register({
+    name: 'registry-list',
+    description: 'Return all background commands as { name, description } (used by the omnibar commands source)',
+    args: [],
+    context: 'background',
+    modes: ['normal'],
+    handler: async () => {
+      const { registerTabCommands } = require('./tabs');
+      const { registerHistoryCommands } = require('./history');
+      const { registerBookmarkCommands } = require('./bookmarks');
+      const { registerDownloadCommands } = require('./downloads');
+      const { registerSessionCommands } = require('./sessions');
+      const { registerProxyCommands } = require('./proxy');
+      const { registerZoomCommands } = require('./zoom');
+      const { registerCaptureCommands } = require('./capture');
+      const { registerMiscCommands } = require('./misc');
+      const { registerPdfCommands } = require('./pdfviewer');
+      const { registerQueueCommands } = require('./queue');
+      const { registerContainerCommands } = require('./containers');
+      const { registerLlmCommands } = require('./llm');
+      const { registerKeymapCommands } = require('./keymap');
+      const bg = new CommandRegistry();
+      registerTabCommands(bg);
+      registerHistoryCommands(bg);
+      registerBookmarkCommands(bg);
+      registerDownloadCommands(bg);
+      registerSessionCommands(bg);
+      registerProxyCommands(bg);
+      registerZoomCommands(bg);
+      registerCaptureCommands(bg);
+      registerMiscCommands(bg);
+      registerPdfCommands(bg);
+      registerQueueCommands(bg);
+      registerContainerCommands(bg);
+      registerLlmCommands(bg);
+      registerKeymapCommands(bg);
+      return bg.all().map(c => ({ name: c.name, description: c.description || '' }));
+    },
+  });
+
+  registry.register({
     name: 'help-cheatsheet',
     description: 'Return the full generated cheatsheet (all commands + active profile bindings)',
     args: [],

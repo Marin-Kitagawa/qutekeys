@@ -1,5 +1,7 @@
 'use strict';
 
+const { captureNextKey: sharedCaptureNextKey } = require('../content_scripts/key-capture');
+
 /**
  * Marks & quickmarks commands.
  *
@@ -18,19 +20,12 @@ function registerMarksCommands(registry, ctx = {}) {
   /**
    * Attach a one-shot keydown listener and resolve with the next key pressed.
    * Returns null immediately when DOM is not available (e.g. Node/Jest).
+   * Uses the shared gated capture so the captured key does not ALSO reach the
+   * normal-mode keymap (fix: `m b` used to additionally trigger quickmark-open).
    * @returns {Promise<string|null>}
    */
   function captureNextKey() {
-    if (typeof document === 'undefined') return Promise.resolve(null);
-    return new Promise(resolve => {
-      function onKey(e) {
-        document.removeEventListener('keydown', onKey, true);
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        resolve(e.key);
-      }
-      document.addEventListener('keydown', onKey, true);
-    });
+    return sharedCaptureNextKey();
   }
 
   // ── mark-set ────────────────────────────────────────────────────────────────

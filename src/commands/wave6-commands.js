@@ -1,21 +1,11 @@
 'use strict';
 
+const { captureNextKey } = require('../content_scripts/key-capture');
+
 function registerWave6Commands(registry, ctx = {}) {
   const { modes, passThrough, macros, blocklist, scrollTarget, dispatcher, messaging, vimEditor, omnibar, insert } = ctx;
 
-  // Helper: captureNextKey (same pattern as marks-commands.js)
-  function captureNextKey() {
-    if (typeof document === 'undefined') return Promise.resolve(null);
-    return new Promise(resolve => {
-      function onKey(e) {
-        document.removeEventListener('keydown', onKey, true);
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        resolve(e.key);
-      }
-      document.addEventListener('keydown', onKey, true);
-    });
-  }
+  // captureNextKey comes from ./key-capture (gated against the keymap)
 
   // ── mode-insert ──────────────────────────────────────────────────────────
   registry.register({

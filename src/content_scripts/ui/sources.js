@@ -105,18 +105,52 @@ async function tabs(query, messaging) {
 }
 
 /**
- * Commands source — searches the registry.
+ * Fetch the background command list (used to detect command+args input).
  */
-async function commands(query, registry) {
+async function backgroundCommands(messaging) {
+  if (!messaging) return [];
+  try {
+    const result = await messaging.sendMessage({ type: 'command', name: 'registry-list', args: [], flags: {}, count: null });
+    return Array.isArray(result)
+      ? result
+      : (result && Array.isArray(result.result) ? result.result : []);
+  } catch (_) { return []; }
+}
+
+/**
+ * Commands source — searches the content registry PLUS the background command
+ * list (via messaging) so the palette can run background commands too.
+ */
+async function commands(query, registry, messaging) {
   if (!registry) return [];
-  const cmds = registry.search(query || '');
-  return cmds.map(c => ({
+  const q = query || '';
+  const local = registry.search(q).map(c => ({
     type: 'command',
     title: c.name,
     url: '',
     description: c.description || '',
     action: { kind: 'run-command', name: c.name },
   }));
+  let remote = [];
+  if (messaging && typeof messaging.sendMessage === 'function') {
+    try {
+      const result = await messaging.sendMessage({ type: 'command', name: 'registry-list', args: [], flags: {}, count: null });
+      const list = Array.isArray(result)
+        ? result
+        : (result && Array.isArray(result.result) ? result.result : []);
+      remote = (list || [])
+        .filter(c => c && c.name && !registry.get(c.name))
+        .filter(c => !q || c.name.toLowerCase().includes(q.toLowerCase()) || (c.description || '').toLowerCase().includes(q.toLowerCase()))
+        .map(c => ({
+          type: 'command',
+          title: c.name,
+          url: '',
+          description: c.description || '',
+          action: { kind: 'run-command', name: c.name },
+        }));
+    } catch (_) { remote = []; }
+  }
+  return [...local, ...remote];
 }
 
 /**
@@ -254,4 +288,5 @@ module.exports = {
   windows,
   downloads,
   queue,
+  backgroundCommands,
 };

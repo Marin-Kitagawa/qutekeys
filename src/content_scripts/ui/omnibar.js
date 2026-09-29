@@ -9,7 +9,7 @@
  */
 
 const { fuzzyRank }    = require('./fuzzy');
-const { sourceBadge, urlAndSearch, bookmarks, history, tabs, commands, marks, recentlyClosed, closeTabs, windows, downloads } = require('./sources');
+const { sourceBadge, urlAndSearch, bookmarks, history, tabs, commands, marks, recentlyClosed, closeTabs, windows, downloads, queue, backgroundCommands } = require('./sources');
 const { OMNIBAR_CSS }  = require('./omnibar.css');
 const { isSafeNavUrl } = require('../../core/url-safety');
 const { killToStart, killToEnd, deleteWordBack, wordBack, wordForward } = require('./readline');
@@ -326,7 +326,9 @@ class Omnibar {
       case 'tabs':
         return tabs(q, m);
       case 'commands':
-        return commands(q, r);
+        // Stash the background command list for command+args detection
+        backgroundCommands(m).then((bg) => { this._bgCommands = bg; }).catch(() => {});
+        return commands(q, r, m);
       case 'marks':
         return marks(q, c);
       case 'recently-closed':
@@ -348,9 +350,19 @@ class Omnibar {
 
   _execute() {
     if (!this._results.length) {
-      // If there's text in the input, treat it as a URL/search
+      // If there's text in the input, treat it as a URL/search — unless the
+      // first token is a registered command (e.g. `feedkeys gg`), in which
+      // case run it.
       const val = this._input ? this._input.value.trim() : '';
       if (val) {
+        const firstToken = val.split(/\s+/)[0];
+        const isContentCmd = this._registry && !!this._registry.get(firstToken);
+        const isBgCmd = (this._bgCommands || []).some((c) => c.name === firstToken);
+        if (isContentCmd || isBgCmd) {
+          if (this._dispatcher) this._dispatcher.runString(val).catch(() => {});
+          this.close();
+          return;
+        }
         this._openUrl(val, this._sourceName === 'open-newtab');
       }
       this.close();
@@ -361,6 +373,10 @@ class Omnibar {
     if (!item) { this.close(); return; }
 
     const action = item.action || {};
+    // Capture the raw input before close() — used to preserve typed args
+    const rawInput = this._input ? this._input.value.trim() : '';
+    // eslint-disable-next-line no-console
+    console.log('[QuteSurf][omni-debug] execute:', rawInput, '| action:', action.kind, '| name:', action.name, '| url:', action.url);
     this.close();
 
     switch (action.kind) {
@@ -372,11 +388,18 @@ class Omnibar {
           this._messaging.sendMessage({ type: 'command', name: 'tab-activate', args: [action.tabId], flags: {}, count: null }).catch(() => {});
         }
         break;
-      case 'run-command':
-        if (this._dispatcher) {
-          this._dispatcher.run(action.name, { args: [], flags: {} }).catch(() => {});
+      case 'run-command': {
+        if (!this._dispatcher) break;
+        const name = action.name || '';
+        // If the user typed arguments (e.g. `feedkeys gg` or `set theme x`),
+        // run the full raw input string instead of the bare command name.
+        if (rawInput && (rawInput === name || rawInput.startsWith(name + ' '))) {
+          this._dispatcher.runString(rawInput).catch(() => {});
+        } else {
+          this._dispatcher.run(name, { args: [], flags: {} }).catch(() => {});
         }
         break;
+      }
       case 'close-tab':
         if (this._messaging) {
           this._messaging.sendMessage({ type: 'command', name: 'tab-close-id', args: [action.tabId], flags: {}, count: null }).catch(() => {});

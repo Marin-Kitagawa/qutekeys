@@ -144,6 +144,9 @@ const HINT_SELECTOR = [
 
 const IMAGE_SELECTOR = 'img[src]';
 
+/** Selector for hint-yank: normal hint targets plus bare images (SK ;y copies image URLs) */
+const YANK_SELECTOR = HINT_SELECTOR + ', img[src]';
+
 const INPUT_SELECTOR = 'input:not([type=hidden]), select, textarea';
 
 /** Wave-2 selectors */
@@ -345,6 +348,9 @@ class HintsController {
   collectFor(action) {
     const root = typeof document !== 'undefined' ? document : null;
     switch (action) {
+      case 'yank':
+      case 'hint-yank-multi':
+        return collectTargets(root, YANK_SELECTOR);
       case 'images':
       case 'hint-images-tab':
         return collectTargets(root, IMAGE_SELECTOR);
@@ -359,7 +365,6 @@ class HintsController {
       case 'hint-newtab-fg':
       case 'hint-fill':
       case 'hint-rapid':
-      case 'hint-yank-multi':
         return collectTargets(root, LINKS_SELECTOR);
       case 'hint-click-media':
         return collectTargets(root, MEDIA_SELECTOR);
@@ -473,9 +478,17 @@ class HintsController {
         }
         break;
 
-      case 'yank':
+      case 'yank': {
+        // Images (and other src-only elements) yank their absolute URL —
+        // SK ;y copies image URLs. Elements with an href yank the href;
+        // everything else falls back to visible text.
+        if (el.tagName === 'IMG' || (!el.href && !el.getAttribute('href')) ) {
+          const src = el.src || '';
+          if (src) { this._yank(src); break; }
+        }
         this._yank(href || el.textContent);
         break;
+      }
 
       case 'hover':
         this._dispatchMouseEvent(el, 'mouseover');

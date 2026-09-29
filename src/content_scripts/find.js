@@ -1,7 +1,7 @@
-'use strict';
+﻿'use strict';
 
 /**
- * Find — pure match utilities + Find controller for in-page text search.
+ * Find â€” pure match utilities + Find controller for in-page text search.
  *
  * Import-safe under Jest/Node: no DOM globals are accessed at module level.
  * All DOM/window usage is guarded inside the Find class methods.
@@ -10,7 +10,7 @@
 /**
  * Build a RegExp for the given search text and options.
  *
- * NOTE: Does NOT include the 'g' flag — a global regex with .test() advances
+ * NOTE: Does NOT include the 'g' flag â€” a global regex with .test() advances
  * lastIndex, making repeated calls on the same object unreliable.  The
  * controller uses a fresh regex (or addeds 'g') when scanning the DOM.
  *
@@ -40,10 +40,10 @@ function stepIndex(current, dir, count) {
   return (current + dir + count) % count;
 }
 
-// ─── Find controller ─────────────────────────────────────────────────────────
+// â”€â”€â”€ Find controller â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /**
- * Find controller — renders the Glass find bar into the shadow host, wires
+ * Find controller â€” renders the Glass find bar into the shadow host, wires
  * keyboard events, highlights matches in the document using <mark> wrappers,
  * and manages find-mode lifecycle.
  *
@@ -65,7 +65,7 @@ class Find {
     this._keydownBound = this._onKeydown.bind(this);
   }
 
-  // ── Public API ──────────────────────────────────────────────────────────────
+  // â”€â”€ Public API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   /**
    * Open the find bar and enter find mode.
@@ -119,7 +119,7 @@ class Find {
     }
   }
 
-  // ── Private — bar rendering ─────────────────────────────────────────────────
+  // â”€â”€ Private â€” bar rendering â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   _renderBar() {
     if (!this._host || !this._host.root) return;
@@ -134,7 +134,7 @@ class Find {
     const input = document.createElement('input');
     input.type        = 'text';
     input.className   = 'qs-findbar__input';
-    input.placeholder = 'Find…';
+    input.placeholder = 'Findâ€¦';
     input.setAttribute('autocomplete', 'off');
     input.setAttribute('spellcheck', 'false');
 
@@ -181,7 +181,7 @@ class Find {
     }
   }
 
-  // ── Private — keydown handler ───────────────────────────────────────────────
+  // â”€â”€ Private â€” keydown handler â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   _onKeydown(e) {
     if (e.key === 'Escape') {
@@ -197,7 +197,7 @@ class Find {
     }
   }
 
-  // ── Private — search & highlight ───────────────────────────────────────────
+  // â”€â”€ Private â€” search & highlight â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   _runSearch(text) {
     this._removeMarks();

@@ -1,5 +1,7 @@
 'use strict';
 
+const { isKeyCaptureActive } = require('./key-capture');
+
 /**
  * Map of special KeyboardEvent.key values to vim/qute notation strings.
  */
@@ -127,6 +129,8 @@ class KeyHandler {
       // 'nomatch'
       this._onCleared();
     }
+
+    return result;
   }
 
   _clearPendingTimer() {
@@ -157,8 +161,17 @@ function makeContentKeydownHandler({ modes, keyHandler, toKeyString = keyEventTo
   const MODIFIERS = ['Control', 'Alt', 'Meta', 'Shift'];
   return function (e) {
     if (MODIFIERS.includes(e.key)) return;
+    // A pending one-shot key capture (mark-set, quickmark-save, macro-record…)
+    // owns the next key exclusively — do not feed it to the keymap as well.
+    if (isKeyCaptureActive()) return;
     if (modes && typeof modes.current === 'function' && modes.current() !== 'normal') return;
-    keyHandler.handleKey(toKeyString(e));
+    const result = keyHandler.handleKey(toKeyString(e));
+    // Prevent the browser's default character insertion for keys we consumed
+    // (e.g. '/' and ':' would otherwise leak into an input focused by the
+    // command that just ran, like the find bar or the omnibar input).
+    if (result && (result.status === 'matched' || result.status === 'pending')) {
+      e.preventDefault();
+    }
   };
 }
 

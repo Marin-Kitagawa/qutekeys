@@ -1,3 +1,6 @@
+/**
+ * @jest-environment node
+ */
 'use strict';
 
 const path = require('path');
@@ -145,7 +148,7 @@ describe('QuteSurf e2e', () => {
       await new Promise((r) => setTimeout(r, 300));
 
       // ':' typically opens the omnibar / command line
-      await page.keyboard.press('Shift+Semicolon'); // ':'
+      await page.keyboard.type(':');
       await new Promise((r) => setTimeout(r, 200));
 
       // Escape closes it
