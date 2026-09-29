@@ -288,6 +288,113 @@ function registerUtilCommands(registry, ctx = {}) {
     },
   });
 
+  // ── yank-downloading (SurfingKeys yd) ──────────────────────────────────
+  registry.register({
+    name: 'yank-downloading',
+    description: 'Copy the URLs of the currently active downloads to the clipboard (SurfingKeys yd)',
+    context: 'content',
+    modes: ['normal'],
+    async handler() {
+      if (!messaging || typeof messaging.sendMessage !== 'function') return;
+      const result = await messaging.sendMessage({ type: 'command', name: 'download-list', args: [], flags: {}, count: null });
+      const items = Array.isArray(result)
+        ? result
+        : (result && Array.isArray(result.result) ? result.result : []);
+      const urls = (items || [])
+        .filter(d => d && d.state === 'in_progress' && d.url)
+        .map(d => d.url);
+      if (!urls.length) return;
+      const { Clipboard } = require('../content_scripts/clipboard');
+      await Clipboard.write(urls.join('\n'));
+    },
+  });
+
+  // ── reader-view (qutebrowser :readability approximation) ───────────────
+  registry.register({
+    name: 'reader-view',
+    description: 'Extract the main article text and show it in a distraction-free preview tab (readability heuristic)',
+    context: 'content',
+    modes: ['normal'],
+    async handler() {
+      if (typeof document === 'undefined' || typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local) return;
+      // Heuristic: prefer <article> / <main>, else the element with the most
+      // paragraph text; fall back to body text.
+      let root = document.querySelector('article') || document.querySelector('main');
+      if (!root) {
+        let best = null;
+        let bestScore = 0;
+        for (const el of document.querySelectorAll('div, section')) {
+          const ps = el.querySelectorAll('p');
+          let score = 0;
+          for (const p of ps) score += (p.textContent || '').trim().length;
+          if (score > bestScore) { bestScore = score; best = el; }
+        }
+        root = best;
+      }
+      const source = root || document.body;
+      if (!source) return;
+      // Build markdown-ish text: headings + paragraphs + list items
+      const parts = [];
+      const walker = source.querySelectorAll('h1,h2,h3,h4,p,li,blockquote,pre');
+      for (const el of walker) {
+        const tag = el.tagName.toLowerCase();
+        const text = (el.textContent || '').replace(/\s+/g, ' ').trim();
+        if (!text) continue;
+        if (/^h[1-4]$/.test(tag)) parts.push('#'.repeat(Number(tag[1])) + ' ' + text);
+        else if (tag === 'li') parts.push('- ' + text);
+        else if (tag === 'blockquote') parts.push('> ' + text);
+        else parts.push(text);
+      }
+      const md = (parts.length ? parts.join('\n\n') : (source.innerText || ''));
+      if (!md.trim()) return;
+      await new Promise(resolve => chrome.storage.local.set({ 'qutesurf:preview': md }, resolve));
+      // Open the markdown preview page, which renders the stored text
+      if (messaging && typeof messaging.sendMessage === 'function') {
+        await messaging.sendMessage({ type: 'command', name: 'open-extension-page', args: ['markdown.html'], flags: {}, count: null });
+      }
+    },
+  });
+
+  // ── proxy config copy/apply (SurfingKeys ;cp / ;ap) ─────────────────
+  registry.register({
+    name: 'proxy-copy-config',
+    description: 'Copy the current proxy configuration (rules + server) as JSON to the clipboard',
+    context: 'content',
+    modes: ['normal'],
+    async handler() {
+      if (!messaging || typeof messaging.sendMessage !== 'function') return;
+      const res = await messaging.sendMessage({ type: 'command', name: 'proxy-get-config', args: [], flags: {}, count: null });
+      const value = res && typeof res === 'object' && 'ok' in res ? res.result : res;
+      if (!value) return;
+      const { Clipboard } = require('../content_scripts/clipboard');
+      await Clipboard.write(JSON.stringify(value));
+    },
+  });
+
+  registry.register({
+    name: 'proxy-apply-config',
+    description: 'Read a proxy configuration JSON from the clipboard and apply it',
+    context: 'content',
+    modes: ['normal'],
+    async handler() {
+      if (!messaging || typeof messaging.sendMessage !== 'function' || typeof navigator === 'undefined' || !navigator.clipboard) return;
+      const text = await navigator.clipboard.readText().catch(() => '');
+      if (!text.trim()) return;
+      let parsed;
+      try { parsed = JSON.parse(text); } catch (_) { return; }
+      if (!parsed || typeof parsed !== 'object') return;
+      const rules = Array.isArray(parsed.rules) ? parsed.rules : [];
+      for (const rule of rules) {
+        if (rule && rule.host && rule.proxy) {
+          await messaging.sendMessage({ type: 'command', name: 'proxy-set', args: [rule.host, rule.proxy], flags: {}, count: null });
+        }
+      }
+      if (parsed.server) {
+        await messaging.sendMessage({ type: 'command', name: 'proxy-server', args: [parsed.server], flags: {}, count: null });
+      }
+    },
+  });
+
   // ── search-selected / search-selected-interactive ──────────────────────────
   registry.register({
     name: 'search-selected',

@@ -183,6 +183,21 @@ module.exports = {
       ';s':           'pdf-viewer-toggle',
       'cq':           'queue-add',
       ';cl':          'container-open Personal',
+
+      // ── Parity-verification fixes ────────────────────────────────
+      'gp':           'tab-focus-audible',
+      'gd':           'download-mhtml',
+      '?':            'help',
+      ';fs':          'hint-scrollable',
+      '<Alt-1>':      'tab-goto 1',
+      '<Alt-2>':      'tab-goto 2',
+      '<Alt-3>':      'tab-goto 3',
+      '<Alt-4>':      'tab-goto 4',
+      '<Alt-5>':      'tab-goto 5',
+      '<Alt-6>':      'tab-goto 6',
+      '<Alt-7>':      'tab-goto 7',
+      '<Alt-8>':      'tab-goto 8',
+      '<Alt-9>':      'tab-goto 9',
     },
 
     insert: {

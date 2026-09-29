@@ -75,6 +75,9 @@ async function history(query, messaging) {
       type: 'history',
       title: h.title || h.url,
       url: h.url,
+      // Retain metadata for <C-r> re-sorting
+      visitCount: h.visitCount,
+      lastVisitTime: h.lastVisitTime,
       action: { kind: 'open', url: h.url },
     }));
   } catch (_) {

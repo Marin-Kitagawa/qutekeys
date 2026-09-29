@@ -367,6 +367,15 @@ function Visual({ host: _host, modes }) {
     _keyListener = function (e) {
       const key = e.key;
 
+      // ── Ctrl-U/Ctrl-D: scroll ±20 lines while staying in visual mode ────
+      if (e.ctrlKey && !e.altKey && !e.metaKey && (key === 'u' || key === 'd')) {
+        const dir = key === 'd' ? 1 : -1;
+        window.scrollBy(0, dir * 20 * 22); // 20 lines ≈ 22 px per line
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+
       // ── Escape: exit mode ───────────────────────────────────────────────
       if (key === 'Escape') {
         _pendingSeek = null;

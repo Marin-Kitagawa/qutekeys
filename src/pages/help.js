@@ -13,12 +13,18 @@
   var CATEGORY_ORDER = [
     'Navigation', 'Hints', 'Tabs', 'Omnibar', 'Find',
     'Clipboard', 'Visual', 'Marks', 'Sessions', 'Proxy',
-    'Userscripts', 'Editor', 'Settings', 'Other',
+    'Userscripts', 'Editor', 'Downloads', 'Queue', 'Speech',
+    'Config', 'Reader', 'Settings', 'Other',
   ];
 
   function categorize(name) {
     if (/^tab-/.test(name))                                      return 'Tabs';
     if (/^session-/.test(name))                                  return 'Sessions';
+    if (/^config-|^set$|^bind$|^unbind$|^profile$/.test(name))  return 'Config';
+    if (/^download-/.test(name))                                 return 'Downloads';
+    if (/^queue-|^omnibar-queue$/.test(name))                    return 'Queue';
+    if (/^tts-|^read-aloud$|^read-stop$/.test(name))             return 'Speech';
+    if (/^reader-/.test(name))                                   return 'Reader';
     if (
       /^scroll/.test(name) || /^back$/.test(name) ||
       /^forward$/.test(name) || /^reload/.test(name) ||
@@ -170,7 +176,35 @@
 
   // The real profile keymaps live in the (bundled) background, not in storage.
   // Ask the background for the active profile's resolved bindings + user overrides.
+  // Preferred path: the registry-driven 'help-cheatsheet' command, which knows
+  // EVERY registered command (content + background) and its description. The
+  // inline snapshot below is only a fallback for older background builds.
   function loadData(callback) {
+    if (
+      typeof chrome !== 'undefined' &&
+      chrome.runtime &&
+      chrome.runtime.sendMessage
+    ) {
+      try {
+        chrome.runtime.sendMessage({ type: 'command', name: 'help-cheatsheet', args: [] }, function (resp) {
+          if (chrome.runtime.lastError || !resp || !resp.ok || !resp.result || !resp.result.sheet) {
+            loadFallback(callback);
+            return;
+          }
+          callback({
+            activeProfile: resp.result.activeProfile,
+            sheet: resp.result.sheet,
+          });
+        });
+      } catch (_) {
+        loadFallback(callback);
+      }
+    } else {
+      loadFallback(callback);
+    }
+  }
+
+  function loadFallback(callback) {
     if (
       typeof chrome !== 'undefined' &&
       chrome.runtime &&
@@ -359,11 +393,17 @@
     var searchEl = document.getElementById('search');
 
     loadData(function (data) {
-      var activeProfile   = data.activeProfile   || 'hybrid';
-      var profileBindings = data.profileBindings || {};
-      var userBindings    = data.userBindings    || { normal: {}, insert: {}, visual: {} };
+      var activeProfile = data.activeProfile || 'hybrid';
+      var sheet;
 
-      var sheet = buildCheatsheet(profileBindings, userBindings);
+      if (data.sheet) {
+        // Registry-driven path (preferred): background generated the sheet
+        sheet = data.sheet;
+      } else {
+        var profileBindings = data.profileBindings || {};
+        var userBindings    = data.userBindings    || { normal: {}, insert: {}, visual: {} };
+        sheet = buildCheatsheet(profileBindings, userBindings);
+      }
 
       renderSheet(sheet, '');
 

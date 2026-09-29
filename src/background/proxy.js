@@ -62,6 +62,17 @@ async function applyAndPersist(state) {
  * @param {import('../core/registry').CommandRegistry} registry
  */
 function registerProxyCommands(registry) {
+  // proxy-get-config — return the persisted proxy state (for ;cp copy)
+  registry.register({
+    name: 'proxy-get-config',
+    context: 'background',
+    description: 'Return the stored proxy configuration { rules, mode, server }',
+    modes: ['normal'],
+    async handler(_ctx, _parsed) {
+      return loadState();
+    },
+  });
+
   // proxy-set <pattern> <proxyString>
   // e.g. proxy-set *.example.com "PROXY 127.0.0.1:8080"
   registry.register({

@@ -243,6 +243,15 @@ module.exports = {
       ';s':   'pdf-viewer-toggle',
       'cq':   'queue-add',
       ';cl':  'container-open Personal',
+
+      // ── Parity-verification fixes (SK keys) ───────────────────────
+      'gp':   'tab-focus-audible',
+      'yT':   'tab-new-background',
+      'I':    'edit-with-vim',
+      ';fs':  'hint-scrollable',
+      'ymc':  'hint-yank-columns',
+      ';cp':  'proxy-copy-config',
+      ';ap':  'proxy-apply-config',
     },
 
     insert: {

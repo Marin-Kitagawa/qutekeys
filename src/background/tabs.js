@@ -464,16 +464,37 @@ function registerTabCommands(registry) {
 
   registry.register({
     name: 'tab-group',
-    description: 'Group the current tab (no-op if chrome.tabs.group unavailable)',
+    description: 'Add the current tab to a named tab group (creates it when needed; Chrome only). Usage: tab-group [title]',
+    args: ['title?'],
+    context: 'background',
+    modes: ['normal'],
+    handler: async (ctx, parsed) => {
+      const a = api();
+      if (!a || !a.tabs || !a.tabs.group) {
+        throw new Error('tab groups are not supported in this browser');
+      }
+      const id = ctx.sender && ctx.sender.tab && ctx.sender.tab.id;
+      if (!id) return null;
+      const groupId = await a.tabs.group({ tabIds: [id] });
+      const title = parsed.args && parsed.args[0];
+      if (title && a.tabGroups && typeof a.tabGroups.update === 'function') {
+        return a.tabGroups.update(groupId, { title });
+      }
+      return groupId;
+    },
+  });
+
+  registry.register({
+    name: 'tab-focus-audible',
+    description: 'Switch to the first tab that is playing audio (SK gp)',
     args: [],
     context: 'background',
     modes: ['normal'],
-    handler: async (ctx, _parsed) => {
+    handler: async (_ctx, _parsed) => {
       const a = api();
-      if (!a || !a.tabs || !a.tabs.group) return;
-      const id = ctx.sender && ctx.sender.tab && ctx.sender.tab.id;
-      if (!id) return;
-      return a.tabs.group({ tabIds: [id] });
+      const audible = await a.tabs.query({ audible: true });
+      if (!audible.length) return null;
+      return a.tabs.update(audible[0].id, { active: true });
     },
   });
 

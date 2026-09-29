@@ -175,6 +175,30 @@ function collectDetectedLinks(root) {
 }
 
 /**
+ * Collect scrollable elements (overflow auto/scroll with actual overflow),
+ * used by `hint-scrollable` (SK ;fs).
+ * @param {Document|Element} [root=document]
+ * @returns {Element[]}
+ */
+function collectScrollable(root) {
+  if (typeof document === 'undefined') return [];
+  const searchRoot = root || document;
+  const candidates = Array.from(searchRoot.querySelectorAll('*')).filter(el => {
+    if (el === document.body || el === document.documentElement) return false;
+    const style = (typeof window !== 'undefined' && window.getComputedStyle)
+      ? window.getComputedStyle(el)
+      : null;
+    if (!style) return false;
+    const oy = style.overflowY;
+    const ox = style.overflowX;
+    const scrollableY = (oy === 'auto' || oy === 'scroll') && el.scrollHeight > el.clientHeight + 2;
+    const scrollableX = (ox === 'auto' || ox === 'scroll') && el.scrollWidth > el.clientWidth + 2;
+    return scrollableY || scrollableX;
+  });
+  return candidates;
+}
+
+/**
  * Collect interactive elements from `root`.
  *
  * Visibility filtering: in real browsers we skip elements with zero bounding
@@ -342,7 +366,10 @@ class HintsController {
       case 'hint-yank-pre':
         return collectTargets(root, PRE_SELECTOR);
       case 'hint-yank-column':
+      case 'hint-yank-columns':
         return collectTargets(root, TABLE_HEAD_SELECTOR);
+      case 'hint-scrollable':
+        return collectScrollable(root);
       case 'hint-detect-links':
         return collectDetectedLinks(root);
       case 'hint-regional':
@@ -555,6 +582,15 @@ class HintsController {
         break;
       }
 
+      case 'hint-yank-columns': {
+        // Accumulate multiple columns; Esc finishes (like hint-yank-multi)
+        const cells2 = getTableColumnCells(el);
+        const text2 = cells2.map(c => (c.textContent || '').trim()).join('\n');
+        this._accumulated.push(text2);
+        this._yank(this._accumulated.join('\n\n'));
+        return; // keep hints open
+      }
+
       case 'hint-yank-pre':
         this._yank(el.textContent || el.innerText || '');
         break;
@@ -567,6 +603,10 @@ class HintsController {
         this._yank(val);
         break;
       }
+
+      case 'hint-scrollable':
+        if (el && typeof el.focus === 'function') el.focus();
+        break;
 
       case 'hint-click-media':
         this._click(el);
@@ -720,7 +760,7 @@ class HintsController {
     }
 
     // Actions that keep hints open after each selection
-    const PERSISTENT_ACTIONS = new Set(['multi', 'hint-rapid', 'hint-yank-multi']);
+    const PERSISTENT_ACTIONS = new Set(['multi', 'hint-rapid', 'hint-yank-multi', 'hint-yank-columns']);
 
     if (exact) {
       this.executeAction(this._action, exact.el);
@@ -892,5 +932,6 @@ module.exports = {
   getTableColumnCells,
   joinYankedUrls,
   hintPosition,
+  collectScrollable,
   HintsController,
 };

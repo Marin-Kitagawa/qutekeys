@@ -14,6 +14,7 @@ const { registerPdfCommands, attachPdfRedirect } = require('./pdfviewer');
 const { registerQueueCommands } = require('./queue');
 const { registerContainerCommands } = require('./containers');
 const { registerLlmCommands } = require('./llm');
+const { registerHelpSheetCommands } = require('./help');
 
 /**
  * Create a message router for background commands.
@@ -67,6 +68,7 @@ function buildBackgroundRegistry() {
   registerQueueCommands(registry);
   registerContainerCommands(registry);
   registerLlmCommands(registry);
+  registerHelpSheetCommands(registry);
   registerKeymapCommands(registry);
   return registry;
 }

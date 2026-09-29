@@ -73,6 +73,9 @@ class Omnibar {
     this._selected   = 0;
     this._sourceName = null;
     this._styleInjected = false;
+    this._page       = 0;   // current results page (Wave 7 <C-.> / <C-,>)
+    this._pageSize   = 20;
+    this._historySort = null; // null | 'visitCount' | 'lastVisitTime' (<C-r>)
     this._onKey      = this._handleKey.bind(this);
     this._onOverlayClick = this._handleOverlayClick.bind(this);
   }
@@ -183,11 +186,12 @@ class Omnibar {
       return;
     }
 
-    for (let i = 0; i < this._results.length; i++) {
-      const { item, ranges } = this._results[i];
+    const visible = this._visibleResults();
+    for (let v = 0; v < visible.length; v++) {
+      const { item, ranges, abs } = visible[v];
       const row = document.createElement('div');
-      row.className = 'qs-omni-row' + (i === this._selected ? ' selected' : '');
-      row.dataset.index = String(i);
+      row.className = 'qs-omni-row' + (abs === this._selected ? ' selected' : '');
+      row.dataset.index = String(abs);
 
       // Favicon
       const favUrl = _faviconUrl(item.url);
@@ -235,23 +239,69 @@ class Omnibar {
       // Click handler
       row.addEventListener('mousedown', (e) => {
         e.preventDefault();
-        this._selected = i;
+        this._selected = abs;
         this._execute();
       });
 
       list.appendChild(row);
+    }
+
+    // Page indicator when paging is meaningful
+    if (this._results.length > this._pageSize) {
+      const indicator = document.createElement('div');
+      indicator.id = 'qs-omni-pageinfo';
+      indicator.textContent = `page ${this._page + 1} / ${this._pageCount()}  (<C-.> next · <C-,> prev)`;
+      list.appendChild(indicator);
     }
   }
 
   // ── Source resolution ──────────────────────────────────────────────────────
 
   async _query(q) {
-    const rawItems = await this._resolveSource(this._sourceName, q);
+    let rawItems = await this._resolveSource(this._sourceName, q);
+    // Wave 7 <C-r>: re-sort the history source by visitCount / lastVisitTime
+    if (this._sourceName === 'history' && this._historySort) {
+      const key = this._historySort;
+      rawItems = rawItems.slice().sort((a, b) => (b[key] || 0) - (a[key] || 0));
+    }
     const searchKey = item => [item.title, item.url, item.name, item.description].filter(Boolean).join(' ');
     const ranked = fuzzyRank(q, rawItems, searchKey);
     this._results = ranked.slice(0, MAX_RESULTS);
+    this._page = 0;
     this._selected = 0;
     this._renderResults();
+  }
+
+  _pageCount() {
+    return Math.max(1, Math.ceil(this._results.length / this._pageSize));
+  }
+
+  _visibleResults() {
+    const start = this._page * this._pageSize;
+    return this._results
+      .slice(start, start + this._pageSize)
+      .map((entry, off) => ({
+        item: entry.item,
+        ranges: entry.ranges || [],
+        abs: start + off,
+      }));
+  }
+
+  /**
+   * Capture a single key for mark creation (Wave 7 <C-m>).
+   * @returns {Promise<string|null>}
+   */
+  _captureMarkKey() {
+    if (typeof document === 'undefined') return Promise.resolve(null);
+    return new Promise(resolve => {
+      function onKey(e) {
+        document.removeEventListener('keydown', onKey, true);
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        resolve(e.key.length === 1 ? e.key : null);
+      }
+      document.addEventListener('keydown', onKey, true);
+    });
   }
 
   async _resolveSource(name, q) {
@@ -456,6 +506,59 @@ class Omnibar {
           }
           return;
         }
+        case 'D': {
+          // Delete ALL listed items (SurfingKeys <C-D>)
+          e.preventDefault(); e.stopPropagation();
+          if (this._messaging) {
+            for (const r of this._results) {
+              const it = r.item || {};
+              if (!it.url) continue;
+              const cmd = it.type === 'bookmark' ? 'bookmark-remove-url'
+                : it.type === 'history' ? 'history-delete-url'
+                : null;
+              if (cmd) {
+                this._messaging.sendMessage({ type: 'command', name: cmd, args: [it.url], flags: {}, count: null }).catch(() => {});
+              }
+            }
+          }
+          this._results = [];
+          this._renderResults();
+          return;
+        }
+        case 'r':
+          // Re-sort the history source (SurfingKeys <C-r>): toggle
+          // lastVisitTime ↔ visitCount ordering and re-query
+          e.preventDefault(); e.stopPropagation();
+          this._historySort = this._historySort === 'visitCount' ? 'lastVisitTime' : 'visitCount';
+          this._query(this._input ? this._input.value : '');
+          return;
+        case '.':
+          // Next results page (SurfingKeys <C-.>)
+          e.preventDefault(); e.stopPropagation();
+          this._page = Math.min(this._pageCount() - 1, this._page + 1);
+          this._renderResults();
+          return;
+        case ',':
+          // Previous results page (SurfingKeys <C-,>)
+          e.preventDefault(); e.stopPropagation();
+          this._page = Math.max(0, this._page - 1);
+          this._renderResults();
+          return;
+        case 'm': {
+          // Create a vim-mark for the focused item (SurfingKeys <C-m>)
+          e.preventDefault(); e.stopPropagation();
+          const mi = this._results[this._selected];
+          const markUrl = mi && mi.item && mi.item.url;
+          if (markUrl && this._config) {
+            this._captureMarkKey().then(key => {
+              if (!key || key.length !== 1) return;
+              const marks = (this._config.get && this._config.get('marks')) || {};
+              marks[key] = { url: markUrl, scrollY: 0 };
+              this._config.set('marks', marks).catch(() => {});
+            });
+          }
+          return;
+        }
       }
     }
     if (this._input && e.altKey && !e.ctrlKey) {
@@ -503,12 +606,19 @@ class Omnibar {
 
   _moveSelection(delta) {
     if (!this._results.length) return;
-    this._selected = (this._selected + delta + this._results.length) % this._results.length;
+    // Navigate within the visible page; wrap at page edges (Wave 7 paging)
+    const start = this._page * this._pageSize;
+    const end = Math.min(this._results.length, start + this._pageSize) - 1;
+    let next = this._selected + delta;
+    if (next < start) next = end;
+    if (next > end) next = start;
+    this._selected = next;
     this._renderResults();
     // Scroll selected row into view
     if (this._resultsList) {
       const rows = this._resultsList.querySelectorAll('.qs-omni-row');
-      if (rows[this._selected]) rows[this._selected].scrollIntoView({ block: 'nearest' });
+      const local = this._selected - start;
+      if (rows[local]) rows[local].scrollIntoView({ block: 'nearest' });
     }
   }
 

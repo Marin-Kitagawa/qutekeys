@@ -138,6 +138,16 @@ function registerHintCommands(registry, controller) {
       action: 'hint-detect-links',
       description: 'Hint visible text that looks like a URL and navigate to it (SK O)',
     },
+    {
+      name: 'hint-scrollable',
+      action: 'hint-scrollable',
+      description: 'Hint scrollable elements and focus the selected one (SK ;fs)',
+    },
+    {
+      name: 'hint-yank-columns',
+      action: 'hint-yank-columns',
+      description: 'Hint multiple table column headers; Esc yanks all columns (SK ymc)',
+    },
   ];
 
   for (const { name, action, description } of cmds) {

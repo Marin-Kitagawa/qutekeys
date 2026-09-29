@@ -33,7 +33,7 @@ const { registerWave8Commands }       = require('../commands/wave8-commands');
 function registerAllContentCommands(registry, ctx = {}) {
   // Phase 20: per-domain userscripts (store is optional)
   if (ctx.userscriptStore) {
-    registerUserscriptCommands(registry, ctx.userscriptStore);
+    registerUserscriptCommands(registry, ctx.userscriptStore, ctx.vimEditor);
   }
   registerNavCommands(registry);
 

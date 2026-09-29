@@ -127,6 +127,13 @@ const CANONICAL_COMMANDS = [
   'queue-add', 'queue-clear', 'queue-open-all', 'omnibar-queue',
   'tts-voices', 'tts-say',
   'container-open',
+
+  // Parity-verification fixes (2026-09-29)
+  'hint-scrollable', 'hint-yank-columns',
+  'tab-focus-audible',
+  'yank-downloading', 'download-mhtml',
+  'reader-view',
+  'proxy-copy-config', 'proxy-apply-config',
 ];
 
 /**

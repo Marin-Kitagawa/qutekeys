@@ -189,6 +189,17 @@ Three ways to configure, all writing to the same `chrome.storage.local` store:
   container) opens URLs in a named container via `contextualIdentities` (Firefox only;
   Chrome reports the limitation).
 
+=== Parity verification round (2026-09-29)
+
+An independent audit cross-checked every SurfingKeys/qutebrowser feature against
+the live command registries. Gaps found were closed in the same round: registry-driven
+help cheatsheet (`?` now reflects all 240 commands), omnibar `<C-D>/<C-r>/<C-.>/<C-,>/<C-m>`,
+named tab groups, `:userscript-add` authoring in the vim editor, `yank-downloading` (`yd`),
+`hint-scrollable` (`;fs`), `hint-yank-columns` (`ymc`), `tab-focus-audible` (`gp`),
+visual-mode `<C-u>/<C-d>`, reader view (`:reader-view`), proxy config copy/apply
+(`;cp`/`;ap`), and bindings for `gd`, `yT`, `I`, `?`, `<Alt-1..9>`. See
+`docs/FEATURE-PARITY.md` (revision 3) for the complete matrix.
+
 
 === Modern Glass UI
 
