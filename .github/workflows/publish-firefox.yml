@@ -1,0 +1,94 @@
+name: Publish Firefox
+
+# Builds the Firefox target, lints it, signs it through Mozilla addons (AMO)
+# and attaches the signed .xpi plus an unsigned zip to a GitHub release.
+#
+# Required repository secrets (Settings → Secrets and variables → Actions):
+#   MOZILLA_API_KEY     — AMO/JWT API key (https://addons.mozilla.org/developers/addon/api/key/)
+#   MOZILLA_API_SECRET  — AMO/JWT API secret
+# The addon id comes from the manifest (browser_specific_settings.gecko.id =
+# qutesurf@local); web-ext sign is skipped automatically when secrets are absent.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish-firefox:
+    runs-on: ubuntu-latest
+    env:
+      MOZILLA_API_KEY: ${{ secrets.MOZILLA_API_KEY }}
+      MOZILLA_API_SECRET: ${{ secrets.MOZILLA_API_SECRET }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Firefox target
+        run: npx rimraf dist && npm run build:firefox
+
+      - name: Determine version
+        run: |
+          if [[ "${GITHUB_REF_NAME}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+.*$ ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          else
+            VERSION=$(node -p "require('./dist/firefox/manifest.json').version")
+          fi
+          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
+          echo "Publishing version ${VERSION}"
+
+      - name: Sync manifest version
+        run: |
+          node -e "
+            const fs = require('fs');
+            const file = 'dist/firefox/manifest.json';
+            const m = JSON.parse(fs.readFileSync(file, 'utf8'));
+            m.version = process.env.VERSION;
+            fs.writeFileSync(file, JSON.stringify(m, null, 2) + '\n');
+          "
+
+      - name: Lint with web-ext (non-blocking)
+        run: |
+          npx --yes web-ext@latest lint --source-dir dist/firefox || \
+            echo "::warning::web-ext lint reported findings — review before publishing"
+
+      - name: Package unsigned zip
+        run: |
+          cd dist/firefox
+          zip -r -q "../../qutesurf-firefox-v${VERSION}.zip" .
+          cd ../..
+
+      # AMO signing is skipped automatically when the secrets are not configured.
+      # The signed .xpi lands in web-ext-artifacts/.
+      - name: Sign with Mozilla (AMO)
+        if: ${{ env.MOZILLA_API_KEY != '' && env.MOZILLA_API_SECRET != '' }}
+        run: >
+          npx --yes web-ext@latest sign
+          --source-dir dist/firefox
+          --artifacts-dir web-ext-artifacts
+          --api-key "$MOZILLA_API_KEY"
+          --api-secret "$MOZILLA_API_SECRET"
+          --channel unlisted
+          --timeout 600000
+
+      - name: Create GitHub release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            qutesurf-firefox-v*.zip
+            web-ext-artifacts/*.xpi
+          generate_release_notes: true

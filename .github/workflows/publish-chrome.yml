@@ -1,0 +1,94 @@
+name: Publish Chrome
+
+# Builds the Chrome target and:
+#   1. uploads + publishes it to the Chrome Web Store (when CWS secrets are set)
+#   2. attaches the packaged zip to a GitHub release (on version tags)
+#
+# Required repository secrets (Settings → Secrets and variables → Actions):
+#   CHROME_EXTENSION_ID   — the extension id from the Chrome Web Store
+#   CHROME_CLIENT_ID      — OAuth client id for the CWS API
+#   CHROME_CLIENT_SECRET  — OAuth client secret
+#   CHROME_REFRESH_TOKEN  — OAuth refresh token
+#   (see https://github.com/chrome-webstore-upload/chrome-webstore-upload/blob/main/How%20to%20generate%20Google%20OAuth2%20token.md)
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish-chrome:
+    runs-on: ubuntu-latest
+    env:
+      CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
+      CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+      CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
+      CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Chrome target
+        run: npx rimraf dist && npm run build:chrome
+
+      - name: Determine version
+        run: |
+          if [[ "${GITHUB_REF_NAME}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+.*$ ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          else
+            VERSION=$(node -p "require('./dist/chrome/manifest.json').version")
+          fi
+          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
+          echo "Publishing version ${VERSION}"
+
+      - name: Sync manifest version
+        run: |
+          node -e "
+            const fs = require('fs');
+            const file = 'dist/chrome/manifest.json';
+            const m = JSON.parse(fs.readFileSync(file, 'utf8'));
+            m.version = process.env.VERSION;
+            fs.writeFileSync(file, JSON.stringify(m, null, 2) + '\n');
+          "
+
+      - name: Package zip
+        run: |
+          cd dist/chrome
+          zip -r -q "../../qutesurf-chrome-v${VERSION}.zip" .
+          cd ../..
+          ls -la qutesurf-chrome-v"${VERSION}".zip
+
+      - name: Lint manifest
+        run: node -e "JSON.parse(require('fs').readFileSync('dist/chrome/manifest.json','utf8')); console.log('manifest.json is valid JSON')"
+
+      # Store upload is skipped automatically when the secrets are not configured
+      - name: Upload to Chrome Web Store
+        if: ${{ env.CHROME_EXTENSION_ID != '' && env.CHROME_CLIENT_ID != '' && env.CHROME_CLIENT_SECRET != '' && env.CHROME_REFRESH_TOKEN != '' }}
+        run: >
+          npx --yes chrome-webstore-upload-cli@3 upload
+          --source "qutesurf-chrome-v${VERSION}.zip"
+          --extension-id "$CHROME_EXTENSION_ID"
+          --client-id "$CHROME_CLIENT_ID"
+          --client-secret "$CHROME_CLIENT_SECRET"
+          --refresh-token "$CHROME_REFRESH_TOKEN"
+          --auto-publish
+
+      - name: Create GitHub release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: qutesurf-chrome-v*.zip
+          generate_release_notes: true
